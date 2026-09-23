@@ -2,89 +2,101 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Underweb — Deep Intelligence Dashboard</title>
+  <title>Underweb — Deep Intelligence & Architecture Substrate</title>
   <link rel="stylesheet" href="../styles/theme.css">
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
   <div class="app-layout">
-    <!-- Top Bar -->
+    <!-- Top Bar with Scorpion Motif -->
     <header class="topbar">
       <div class="topbar-left">
         <div class="brand">
-          <img src="../../../assets/icons/icon32.png" alt="Underweb" width="22" height="22">
-          <span class="brand-title">UNDERWEB</span>
-          <span class="badge badge-cyan">INTELLIGENCE</span>
+          <img src="../../../assets/branding/scorpion.svg" alt="Underweb Scorpion" width="28" height="28" class="brand-scorpion">
+          <div class="brand-col">
+            <span class="brand-title">UNDERWEB</span>
+            <span class="brand-sub">SCORPION INTELLIGENCE // SUBSTRATE v1.0</span>
+          </div>
+          <span class="badge badge-cobalt">[ ACTIVE ]</span>
         </div>
         <div class="target-site-indicator">
           <span id="targetProtocol" class="text-muted">https://</span>
           <span id="targetHostname" class="target-host">Connecting to target tab...</span>
-          <span id="targetStatusBadge" class="badge badge-emerald">ACTIVE</span>
+          <span id="targetStatusBadge" class="badge badge-cyan">[ 200 OK ]</span>
         </div>
       </div>
       <div class="topbar-right">
-        <button id="refreshBtn" class="btn btn-sm" title="Refresh session telemetry">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button id="refreshBtn" class="btn btn-sm btn-outline" title="Refresh session telemetry">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
-          Refresh
+          Re-Scan Tab
         </button>
-        <button id="exportDropdownBtn" class="btn btn-cyan btn-sm">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <button id="exportDropdownBtn" class="btn btn-electric btn-sm">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          Export Report
+          Export Dossier
         </button>
       </div>
     </header>
 
     <!-- Main Workspace -->
     <div class="workspace">
-      <!-- Navigation Sidebar -->
+      <!-- Navigation Sidebar with Editorial Indexing -->
       <nav class="sidebar">
-        <div class="nav-section-title">EXPLORER</div>
+        <div class="nav-section-title">// SYSTEM RECON</div>
         <button class="nav-item active" data-tab="tab-overview">
-          <span class="nav-icon">📊</span> Overview
+          <span class="nav-num">01</span> Overview
         </button>
         <button class="nav-item" data-tab="tab-stack">
-          <span class="nav-icon">⚡</span> Technology Stack
+          <span class="nav-num">02</span> Tech Stack
         </button>
         <button class="nav-item" data-tab="tab-network">
-          <span class="nav-icon">🌐</span> Network Intelligence
+          <span class="nav-num">03</span> Network Intel
         </button>
         <button class="nav-item" data-tab="tab-architecture">
-          <span class="nav-icon">🕸️</span> Architecture Graph
+          <span class="nav-num">04</span> Architecture Graph
         </button>
         <button class="nav-item" data-tab="tab-infrastructure">
-          <span class="nav-icon">☁️</span> Infrastructure & CDN
+          <span class="nav-num">05</span> Infrastructure & CDN
         </button>
         <button class="nav-item" data-tab="tab-privacy">
-          <span class="nav-icon">🛡️</span> Privacy & Storage
+          <span class="nav-num">06</span> Privacy & Storage
         </button>
         <button class="nav-item" data-tab="tab-security">
-          <span class="nav-icon">🔒</span> Security Posture
+          <span class="nav-num">07</span> Security Posture
         </button>
         <button class="nav-item" data-tab="tab-apis">
-          <span class="nav-icon">🔌</span> API Explorer
+          <span class="nav-num">08</span> API Explorer
         </button>
 
-        <div class="nav-section-title">INVESTIGATION</div>
+        <div class="nav-section-title">// INVESTIGATION</div>
         <button class="nav-item" data-tab="tab-investigator">
-          <span class="nav-icon">🖱️</span> Click Investigator
+          <span class="nav-num">09</span> Click Investigator
         </button>
         <button class="nav-item" data-tab="tab-learn">
-          <span class="nav-icon">🎓</span> Student Learning Mode
+          <span class="nav-num">10</span> Student Wiki
         </button>
         <button class="nav-item" data-tab="tab-compare">
-          <span class="nav-icon">⚖️</span> Compare Sites
+          <span class="nav-num">11</span> Comparison Engine
         </button>
         <button class="nav-item" data-tab="tab-history">
-          <span class="nav-icon">💾</span> History & Export
+          <span class="nav-num">12</span> History & Export
         </button>
+
+        <!-- Sidebar Scorpion Footer Badge -->
+        <div class="sidebar-footer-scorpion">
+          <img src="../../../assets/branding/scorpion.svg" alt="Scorpion" width="22" height="22" opacity="0.7">
+          <div class="scorpion-meta">
+            <span>SUBSTRATE RADAR</span>
+            <span class="scorpion-status">ONLINE // 100% LOCAL</span>
+          </div>
+        </div>
       </nav>
 
       <!-- Panel Content Area -->
@@ -92,9 +104,16 @@
 
         <!-- 1. OVERVIEW TAB -->
         <section id="tab-overview" class="tab-panel active">
-          <div class="panel-header">
-            <h2>Website Intelligence Overview</h2>
-            <p class="panel-desc">Multi-signal technical profile synthesized from browser internals, network telemetry, and runtime inspection.</p>
+          <!-- Hero Header in Bebas Neue & Editorial Subtext -->
+          <div class="editorial-hero-banner">
+            <div class="hero-text-col">
+              <div class="hero-kicker">// EXOSKELETON RECONNAISSANCE</div>
+              <h1 class="hero-title">EXPLORE THE TECHNOLOGY BENEATH EVERY WEBSITE</h1>
+              <p class="hero-subtitle">Multi-signal runtime telemetry, protocol dissection, and directed dependency mapping synthesized into a technical case study.</p>
+            </div>
+            <div class="hero-scorpion-badge">
+              <img src="../../../assets/branding/scorpion.svg" alt="Scorpion Stinger" width="56" height="56">
+            </div>
           </div>
 
           <!-- Hero Grid -->
@@ -102,8 +121,8 @@
             <!-- DNA Radar Card -->
             <div class="card dna-card">
               <div class="card-header">
-                <span class="card-title">🧬 Website DNA Complexity Profile</span>
-                <span class="badge badge-cyan" id="dnaScoreBadge">BALANCED</span>
+                <span class="card-title">🧬 Website DNA Complexity Vector</span>
+                <span class="badge badge-cyan" id="dnaScoreBadge">[ BALANCED ]</span>
               </div>
               <div class="dna-canvas-wrap">
                 <canvas id="dnaCanvas" width="340" height="260"></canvas>
@@ -113,14 +132,14 @@
             <!-- Inferred Architecture Card -->
             <div class="card arch-card">
               <div class="card-header">
-                <span class="card-title">🏛️ Inferred System Architecture</span>
-                <span class="badge badge-emerald" id="archConfidenceBadge">HIGH CONFIDENCE</span>
+                <span class="card-title">🏛️ Inferred System Archetype</span>
+                <span class="badge badge-cobalt" id="archConfidenceBadge">[ HIGH CONFIDENCE ]</span>
               </div>
               <div class="arch-body">
                 <div class="arch-name" id="inferredArchName">Server-Side Rendered (SSR) Hydrated App</div>
                 <p class="arch-expl" id="inferredArchExpl">Hydrated client JavaScript takes over an initial server-rendered HTML document, orchestrating API data flow.</p>
                 <div class="arch-signals-box">
-                  <div class="signals-title">Observable Supporting Signals:</div>
+                  <div class="signals-title">// Observable Substrate Proofs:</div>
                   <ul id="archSignalsList" class="signals-list">
                     <li>Initial document markup contains pre-rendered DOM</li>
                     <li>Hydration payload detected in window script tag</li>
@@ -136,28 +155,28 @@
               <div class="tile-icon">🌐</div>
               <div class="tile-data">
                 <span class="tile-val" id="ovTotalReqs">0</span>
-                <span class="tile-label">Network Requests</span>
+                <span class="tile-label">Requests</span>
               </div>
             </div>
             <div class="card metric-tile">
               <div class="tile-icon">🏢</div>
               <div class="tile-data">
                 <span class="tile-val" id="ovDomains">0</span>
-                <span class="tile-label">Connected Domains</span>
+                <span class="tile-label">Domains</span>
               </div>
             </div>
             <div class="card metric-tile">
               <div class="tile-icon">📡</div>
               <div class="tile-data">
                 <span class="tile-val" id="ovThirdParty">0</span>
-                <span class="tile-label">Third Parties</span>
+                <span class="tile-label">3rd Parties</span>
               </div>
             </div>
             <div class="card metric-tile">
               <div class="tile-icon">⚡</div>
               <div class="tile-data">
                 <span class="tile-val" id="ovTechs">0</span>
-                <span class="tile-label">Detected Techs</span>
+                <span class="tile-label">Tech Signatures</span>
               </div>
             </div>
             <div class="card metric-tile">
@@ -173,7 +192,10 @@
         <!-- 2. STACK TAB -->
         <section id="tab-stack" class="tab-panel">
           <div class="panel-header">
-            <h2>Detected Technology Stack</h2>
+            <div>
+              <div class="hero-kicker">// SUBSTRATE SIGNATURES</div>
+              <h2>Detected Technology Stack</h2>
+            </div>
             <p class="panel-desc">Evidence-backed detection of frameworks, libraries, build tools, CMS, analytics, and cloud providers.</p>
           </div>
           <div id="techStackGrid" class="stack-grid">
@@ -184,9 +206,12 @@
         <!-- 3. NETWORK TAB -->
         <section id="tab-network" class="tab-panel">
           <div class="panel-header">
-            <h2>Network Intelligence & Waterfall</h2>
+            <div>
+              <div class="hero-kicker">// NETWORK TRAFFIC</div>
+              <h2>Network Intelligence & Waterfall</h2>
+            </div>
             <div class="network-filters">
-              <input type="text" id="networkSearchInput" class="input-search" placeholder="Search URL or domain...">
+              <input type="text" id="networkSearchInput" class="input-search" placeholder="Filter URL or domain...">
               <select id="networkCategoryFilter" class="select-filter">
                 <option value="ALL">All Categories</option>
                 <option value="API">API & JSON</option>
@@ -204,7 +229,7 @@
           <div class="card first-contact-card">
             <div class="card-header">
               <span class="card-title">⏱️ "First Contact" Sequence</span>
-              <span class="badge badge-slate">Initial Boot Handshake</span>
+              <span class="badge badge-cobalt">[ INITIAL BOOT HANDSHAKE ]</span>
             </div>
             <div id="firstContactList" class="first-contact-row">
               <!-- Dynamically populated -->
@@ -220,11 +245,14 @@
         <!-- 4. ARCHITECTURE GRAPH TAB -->
         <section id="tab-architecture" class="tab-panel">
           <div class="panel-header">
-            <h2>Interactive Architecture Graph</h2>
+            <div>
+              <div class="hero-kicker">// DIRECTED DEPENDENCY TOPOLOGY</div>
+              <h2>Interactive Architecture Graph</h2>
+            </div>
             <div class="graph-actions">
-              <button id="btnRunDijkstra" class="btn btn-sm btn-cyan">Shortest Path to Tracker</button>
-              <button id="btnRunCentrality" class="btn btn-sm">Betweenness Centrality</button>
-              <button id="btnResetGraph" class="btn btn-sm">Reset View</button>
+              <button id="btnRunDijkstra" class="btn btn-sm btn-cyan">[ Shortest Path to Tracker ]</button>
+              <button id="btnRunCentrality" class="btn btn-sm btn-outline">[ Betweenness Centrality ]</button>
+              <button id="btnResetGraph" class="btn btn-sm btn-outline">[ Reset Camera ]</button>
             </div>
           </div>
 
@@ -246,7 +274,10 @@
         <!-- 5. INFRASTRUCTURE TAB -->
         <section id="tab-infrastructure" class="tab-panel">
           <div class="panel-header">
-            <h2>Infrastructure & Cloud Topology</h2>
+            <div>
+              <div class="hero-kicker">// EDGE & CLOUD RESOLUTION</div>
+              <h2>Infrastructure & Cloud Topology</h2>
+            </div>
             <p class="panel-desc">End-to-end client-to-origin resolution pipeline mapping DNS, IP, ASN, CDN, and Origin Host.</p>
           </div>
           <div id="infraPipelineContainer" class="infra-pipeline">
@@ -257,14 +288,17 @@
         <!-- 6. PRIVACY TAB -->
         <section id="tab-privacy" class="tab-panel">
           <div class="panel-header">
-            <h2>Privacy & Client Storage Audit</h2>
+            <div>
+              <div class="hero-kicker">// SURVEILLANCE VECTORS</div>
+              <h2>Privacy & Client Storage Audit</h2>
+            </div>
             <p class="panel-desc">Analysis of browser tracking, persistent storage, cookies, and hardware API surveillance.</p>
           </div>
           <div class="privacy-grid">
             <div class="card">
               <div class="card-header">
                 <span class="card-title">🍪 Cookie Security & Hygiene</span>
-                <span id="cookieSummaryBadge" class="badge badge-slate">0 Total</span>
+                <span id="cookieSummaryBadge" class="badge badge-outline">0 Total</span>
               </div>
               <div id="cookieIssuesContainer" class="privacy-list"></div>
             </div>
@@ -292,7 +326,10 @@
         <!-- 7. SECURITY TAB -->
         <section id="tab-security" class="tab-panel">
           <div class="panel-header">
-            <h2>Security Posture & Vulnerability Heuristics</h2>
+            <div>
+              <div class="hero-kicker">// DEFENSIVE POSTURE</div>
+              <h2>Security Posture & Vulnerability Heuristics</h2>
+            </div>
             <p class="panel-desc">Inspection of CSP defense-in-depth, HSTS, CORS wildcard risks, and mixed content.</p>
           </div>
           <div class="security-layout">
@@ -315,13 +352,16 @@
         <!-- 8. APIS TAB -->
         <section id="tab-apis" class="tab-panel">
           <div class="panel-header">
-            <h2>API & Protocol Explorer</h2>
+            <div>
+              <div class="hero-kicker">// DATA PROTOCOLS</div>
+              <h2>API & Protocol Explorer</h2>
+            </div>
             <p class="panel-desc">Catalog of REST endpoints, GraphQL operations, and WebSockets observed during interaction.</p>
           </div>
           <div class="card">
             <div class="card-header">
               <span class="card-title">🔌 Observed API Transactions</span>
-              <span id="apiCountBadge" class="badge badge-emerald">0 Endpoints</span>
+              <span id="apiCountBadge" class="badge badge-emerald">[ 0 Endpoints ]</span>
             </div>
             <div id="apiListContainer" class="api-list"></div>
           </div>
@@ -330,12 +370,15 @@
         <!-- 9. INVESTIGATOR TAB ("What Happens When I Click?") -->
         <section id="tab-investigator" class="tab-panel">
           <div class="panel-header">
-            <h2>"What Happens When I Click?" (Interaction Investigator)</h2>
+            <div>
+              <div class="hero-kicker">// EVENT DISSECTION</div>
+              <h2>"What Happens When I Click?" (Interaction Investigator)</h2>
+            </div>
             <div class="investigator-controls">
-              <button id="toggleInvestigatorBtn" class="btn btn-primary">
+              <button id="toggleInvestigatorBtn" class="btn btn-electric">
                 ▶ Start Investigation Mode
               </button>
-              <button id="clearInvestigatorBtn" class="btn btn-sm">Clear Log</button>
+              <button id="clearInvestigatorBtn" class="btn btn-sm btn-outline">Clear Log</button>
             </div>
           </div>
           <div class="card">
@@ -348,7 +391,10 @@
         <!-- 10. LEARN TAB (Student Learning Mode) -->
         <section id="tab-learn" class="tab-panel">
           <div class="panel-header">
-            <h2>Student Learning Mode & Architecture Wiki</h2>
+            <div>
+              <div class="hero-kicker">// COMPUTER SCIENCE DOSSIER</div>
+              <h2>Student Learning Mode & Architecture Wiki</h2>
+            </div>
             <input type="text" id="learnSearchInput" class="input-search" placeholder="Search concepts (e.g. Next.js, HTTP/2, CSP, Redis)...">
           </div>
           <div id="learnGrid" class="learn-grid">
@@ -359,18 +405,21 @@
         <!-- 11. COMPARE TAB -->
         <section id="tab-compare" class="tab-panel">
           <div class="panel-header">
-            <h2>Website Comparison Engine</h2>
+            <div>
+              <div class="hero-kicker">// SIDE-BY-SIDE DIFF</div>
+              <h2>Website Comparison Engine</h2>
+            </div>
             <p class="panel-desc">Compare the technology stack, network footprint, and security posture of two websites side-by-side.</p>
           </div>
           <div id="compareContainer" class="compare-container">
             <div class="compare-row">
               <div class="compare-site-col" id="compareSiteA">
-                <h3>Website A (Active)</h3>
+                <h3>Website A (Active Target)</h3>
                 <div class="compare-metrics" id="siteAMetrics">Loading...</div>
               </div>
               <div class="compare-vs">VS</div>
               <div class="compare-site-col" id="compareSiteB">
-                <h3>Website B (Historical)</h3>
+                <h3>Website B (Historical Snapshot)</h3>
                 <select id="compareSelectB" class="select-filter full-width">
                   <option value="">Select a previously inspected site...</option>
                 </select>
@@ -383,11 +432,14 @@
         <!-- 12. HISTORY & EXPORT TAB -->
         <section id="tab-history" class="tab-panel">
           <div class="panel-header">
-            <h2>Inspection History & Local Storage</h2>
+            <div>
+              <div class="hero-kicker">// PERSISTENCE & ARCHIVES</div>
+              <h2>Inspection History & Local Storage</h2>
+            </div>
             <div class="export-btn-group">
-              <button id="exportJsonBtn" class="btn btn-sm">Download JSON</button>
-              <button id="exportMdBtn" class="btn btn-sm">Download Markdown</button>
-              <button id="exportCsvBtn" class="btn btn-sm">Download Network CSV</button>
+              <button id="exportJsonBtn" class="btn btn-sm btn-outline">Download JSON</button>
+              <button id="exportMdBtn" class="btn btn-sm btn-electric">Download Markdown</button>
+              <button id="exportCsvBtn" class="btn btn-sm btn-outline">Download Network CSV</button>
             </div>
           </div>
           <div class="card">

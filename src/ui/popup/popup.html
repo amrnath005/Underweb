@@ -2,36 +2,36 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Underweb — Website Intelligence</title>
+  <title>Underweb — Architecture Exoskeleton</title>
   <link rel="stylesheet" href="../styles/theme.css">
   <link rel="stylesheet" href="popup.css">
 </head>
 <body>
   <div class="popup-container">
-    <!-- Header -->
+    <!-- Header with Scorpion Motif -->
     <header class="popup-header">
       <div class="brand">
         <div class="brand-icon">
-          <img src="../../../assets/icons/icon32.png" alt="Underweb" width="20" height="20">
+          <img src="../../../assets/branding/scorpion.svg" alt="Underweb Scorpion" width="28" height="28">
         </div>
         <div class="brand-text">
           <span class="brand-name">UNDERWEB</span>
-          <span class="brand-tagline">WEBSITE INTELLIGENCE</span>
+          <span class="brand-tagline">ARCHITECTURE EXOSKELETON</span>
         </div>
       </div>
-      <div id="protocolBadge" class="badge badge-cyan">DETACHED</div>
+      <div id="protocolBadge" class="badge badge-cobalt">[ TLS 1.3 ]</div>
     </header>
 
-    <!-- Target Site Info -->
+    <!-- Target Site Info Bar -->
     <div class="site-bar">
       <div class="site-host-wrap">
         <span id="siteProtocol" class="site-protocol">https://</span>
-        <span id="siteHostname" class="site-host">Loading target...</span>
+        <span id="siteHostname" class="site-host">Scanning substrate...</span>
       </div>
-      <span id="securityBadge" class="badge badge-emerald">SECURE</span>
+      <span id="securityBadge" class="badge badge-emerald">[ SECURE ]</span>
     </div>
 
-    <!-- Quick Stats Grid (Website DNA Snapshot) -->
+    <!-- Website DNA Metrics Grid -->
     <div class="metrics-grid">
       <div class="metric-card">
         <span class="metric-val" id="totalRequests">0</span>
@@ -51,31 +51,31 @@
       </div>
     </div>
 
-    <!-- Detected Stack Summary -->
+    <!-- Detected Stack Section -->
     <div class="section-block">
       <div class="section-title">
-        <span>DETECTED STACK</span>
-        <span id="techCountBadge" class="badge badge-slate">0</span>
+        <span>[ 01 // DETECTED SUBSTRATE ]</span>
+        <span id="techCountBadge" class="badge badge-outline">0 TECHS</span>
       </div>
       <div id="techBadgesContainer" class="badges-row">
-        <span class="empty-state-text">Scanning page runtime & headers...</span>
+        <span class="empty-state-text">Probing runtime globals & DOM markers...</span>
       </div>
     </div>
 
     <!-- Infrastructure & Delivery -->
     <div class="section-block">
       <div class="section-title">
-        <span>INFRASTRUCTURE & CDN</span>
+        <span>[ 02 // INFRASTRUCTURE & EDGE ]</span>
       </div>
       <div id="infraBadgesContainer" class="badges-row">
-        <span class="empty-state-text">Detecting edge & origin...</span>
+        <span class="empty-state-text">Tracing CDN edge & origin host...</span>
       </div>
     </div>
 
-    <!-- Privacy & Storage -->
+    <!-- Client Storage & Privacy -->
     <div class="section-block">
       <div class="section-title">
-        <span>CLIENT STORAGE & PRIVACY</span>
+        <span>[ 03 // CLIENT FOOTPRINT ]</span>
       </div>
       <div id="storageBadgesContainer" class="badges-row">
         <span class="badge badge-slate" id="cookieMetric">0 Cookies</span>
@@ -83,15 +83,15 @@
       </div>
     </div>
 
-    <!-- Actions / Launch Dashboard -->
+    <!-- Footer Action -->
     <footer class="popup-footer">
-      <button id="openDashboardBtn" class="btn btn-primary full-width">
+      <button id="openDashboardBtn" class="btn btn-electric full-width">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
           <line x1="3" y1="9" x2="21" y2="9"></line>
           <line x1="9" y1="21" x2="9" y2="9"></line>
         </svg>
-        OPEN DEEP INTELLIGENCE DASHBOARD
+        OPEN DEEP INTELLIGENCE DASHBOARD &raquo;
       </button>
     </footer>
   </div>

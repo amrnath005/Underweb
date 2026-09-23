@@ -2,9 +2,10 @@
 
 body {
   width: 380px;
-  background-color: var(--bg-primary);
+  background-color: var(--bg-void);
   overflow-x: hidden;
   user-select: none;
+  border: 1px solid var(--border-medium);
 }
 
 .popup-container {
@@ -18,14 +19,14 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 8px;
+  padding-bottom: 10px;
   border-bottom: 1px solid var(--border-subtle);
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
 }
 
 .brand-icon {
@@ -40,34 +41,35 @@ body {
 }
 
 .brand-name {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 13px;
-  letter-spacing: 0.1em;
-  color: #38bdf8;
+  font-family: var(--font-display);
+  font-size: 24px;
+  letter-spacing: 0.08em;
+  color: #ffffff;
+  line-height: 1;
 }
 
 .brand-tagline {
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--text-muted);
-  letter-spacing: 0.08em;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--text-cyan);
+  letter-spacing: 0.1em;
 }
 
 .site-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  background: var(--bg-primary);
+  border: 1px solid var(--border-medium);
+  border-radius: var(--radius-xs);
   padding: 8px 10px;
 }
 
 .site-host-wrap {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 3px;
   font-family: var(--font-mono);
   overflow: hidden;
   text-overflow: ellipsis;
@@ -80,8 +82,8 @@ body {
 }
 
 .site-host {
-  color: var(--text-primary);
-  font-weight: 600;
+  color: #ffffff;
+  font-weight: 700;
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -94,35 +96,41 @@ body {
 }
 
 .metric-card {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   padding: 8px 6px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
+  transition: border-color 0.15s ease;
+}
+
+.metric-card:hover {
+  border-color: var(--border-electric);
 }
 
 .metric-val {
   font-family: var(--font-mono);
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
-  color: var(--text-primary);
+  color: #ffffff;
   line-height: 1.1;
 }
 
 .metric-label {
-  font-size: 10px;
+  font-family: var(--font-mono);
+  font-size: 9px;
   color: var(--text-secondary);
-  margin-top: 3px;
+  margin-top: 4px;
   text-transform: uppercase;
 }
 
 .section-block {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   padding: 10px;
   display: flex;
   flex-direction: column;
@@ -133,10 +141,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 10px;
-  font-weight: 600;
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 700;
   letter-spacing: 0.05em;
-  color: var(--text-muted);
+  color: var(--text-secondary);
 }
 
 .badges-row {
@@ -146,6 +155,7 @@ body {
 }
 
 .empty-state-text {
+  font-family: var(--font-sans);
   font-size: 11px;
   color: var(--text-muted);
   font-style: italic;
@@ -156,5 +166,5 @@ body {
 }
 
 .popup-footer {
-  margin-top: 2px;
+  margin-top: 4px;
 }

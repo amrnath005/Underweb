@@ -1,49 +1,47 @@
 /* src/ui/styles/theme.css */
-/* Professional developer-tool dark theme palette for Underweb */
+/* Electric Cobalt & Cybernetic Scorpion Theme for Underweb */
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Space+Grotesk:wght@400;500;600;700&family=Space+Mono:ital,wght@0,400;0,700;1,400&display=swap');
 
 :root {
-  /* Color Palette - Deep Slate / Cybernetic Developer Theme */
-  --bg-primary: #090d16;
-  --bg-secondary: #0f172a;
-  --bg-tertiary: #1e293b;
-  --bg-elevated: #162032;
-  --bg-hover: #223249;
+  /* Electric Cobalt Blue & Obsidian Palette */
+  --bg-void: #02040a;
+  --bg-primary: #050a1c;
+  --bg-secondary: #0a1332;
+  --bg-tertiary: #0e1c4a;
+  --bg-electric: #0022ff;
+  --bg-electric-hover: #1435ff;
+  --bg-card: #080f28;
 
-  --border-subtle: #1e293b;
-  --border-medium: #334155;
-  --border-highlight: #0ea5e9;
+  --border-subtle: #162456;
+  --border-medium: #223780;
+  --border-electric: #0044ff;
+  --border-bright: rgba(255, 255, 255, 0.25);
+  --border-cyan: #00f0ff;
 
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
-  --text-inverse: #020617;
-
-  /* Accent Colors */
-  --accent-cyan: #06b6d4;
-  --accent-cyan-glow: rgba(6, 182, 212, 0.15);
-  --accent-emerald: #10b981;
-  --accent-emerald-glow: rgba(16, 185, 129, 0.15);
-  --accent-blue: #3b82f6;
-  --accent-purple: #8b5cf6;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
-  --accent-sky: #0ea5e9;
+  --text-white: #ffffff;
+  --text-primary: #f0f4ff;
+  --text-secondary: #9bb0dc;
+  --text-muted: #5d75ab;
+  --text-electric: #3d6bff;
+  --text-cyan: #00f0ff;
+  --text-amber: #ffaa00;
 
   /* Typography */
-  --font-mono: 'JetBrains Mono', 'Fira Code', 'SF Mono', Menlo, Consolas, Monaco, monospace;
-  --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-display: 'Bebas Neue', 'Impact', sans-serif;
+  --font-sans: 'Space Grotesk', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-mono: 'Space Mono', 'JetBrains Mono', monospace;
 
-  /* Shadows */
-  --shadow-card: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -2px rgba(0, 0, 0, 0.2);
-  --shadow-glow: 0 0 15px rgba(6, 182, 212, 0.2);
-
-  /* Radius */
+  /* Radius & Shadows */
+  --radius-xs: 2px;
   --radius-sm: 4px;
   --radius-md: 6px;
-  --radius-lg: 10px;
+  --radius-none: 0px;
+
+  --shadow-electric: 0 0 25px rgba(0, 34, 255, 0.45);
+  --shadow-cyan: 0 0 15px rgba(0, 240, 255, 0.35);
+  --shadow-box: 4px 4px 0px rgba(0, 34, 255, 0.5);
 }
 
-/* Reset & Primitives */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -52,134 +50,156 @@
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--bg-primary);
+  background-color: var(--bg-void);
   color: var(--text-primary);
   font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
 }
 
 /* Scrollbars */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 5px;
+  height: 5px;
 }
 ::-webkit-scrollbar-track {
-  background: var(--bg-primary);
+  background: var(--bg-void);
 }
 ::-webkit-scrollbar-thumb {
   background: var(--border-medium);
-  border-radius: 3px;
+  border-radius: 0px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-muted);
+  background: var(--text-electric);
 }
 
-/* Badges */
+/* Technical Bracketed Badges */
 .badge {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   padding: 2px 7px;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-xs);
   font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  line-height: 1.2;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
   white-space: nowrap;
 }
+.badge-cobalt {
+  background: #0022ff;
+  color: #ffffff;
+  border: 1px solid #3d6bff;
+}
 .badge-cyan {
-  background: rgba(6, 182, 212, 0.12);
-  color: #22d3ee;
-  border: 1px solid rgba(6, 182, 212, 0.3);
+  background: rgba(0, 240, 255, 0.12);
+  color: #00f0ff;
+  border: 1px solid rgba(0, 240, 255, 0.4);
 }
 .badge-emerald {
-  background: rgba(16, 185, 129, 0.12);
+  background: rgba(16, 185, 129, 0.15);
   color: #34d399;
-  border: 1px solid rgba(16, 185, 129, 0.3);
-}
-.badge-purple {
-  background: rgba(139, 92, 246, 0.12);
-  color: #a78bfa;
-  border: 1px solid rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(16, 185, 129, 0.4);
 }
 .badge-amber {
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
-  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(255, 170, 0, 0.15);
+  color: #ffaa00;
+  border: 1px solid rgba(255, 170, 0, 0.4);
 }
 .badge-rose {
-  background: rgba(244, 63, 94, 0.12);
+  background: rgba(244, 63, 94, 0.15);
   color: #fb7185;
-  border: 1px solid rgba(244, 63, 94, 0.3);
+  border: 1px solid rgba(244, 63, 94, 0.4);
 }
 .badge-slate {
   background: var(--bg-tertiary);
   color: var(--text-secondary);
-  border: 1px solid var(--border-medium);
+  border: 1px solid var(--border-subtle);
+}
+.badge-outline {
+  background: transparent;
+  color: var(--text-white);
+  border: 1px solid var(--border-bright);
 }
 
-/* Card Container */
+/* Card Container with Technical Borders */
 .card {
-  background: var(--bg-secondary);
+  background: var(--bg-card);
   border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: 14px;
-  box-shadow: var(--shadow-card);
+  border-radius: var(--radius-sm);
+  padding: 16px;
+  position: relative;
 }
 .card-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--border-subtle);
 }
 .card-title {
-  font-size: 12px;
+  font-family: var(--font-mono);
+  font-size: 11px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  font-weight: 600;
-  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  font-weight: 700;
+  color: var(--text-white);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 8px;
 }
 
-/* Buttons */
+/* High-Impact Brutalist / Editorial Buttons */
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 8px;
   background: var(--bg-tertiary);
-  color: var(--text-primary);
+  color: var(--text-white);
   border: 1px solid var(--border-medium);
-  border-radius: var(--radius-sm);
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
+  border-radius: var(--radius-xs);
+  padding: 7px 14px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.15s ease;
-  font-family: inherit;
 }
 .btn:hover {
-  background: var(--bg-hover);
-  border-color: var(--text-muted);
+  background: var(--bg-secondary);
+  border-color: var(--border-bright);
 }
-.btn-primary {
-  background: #0284c7;
-  border-color: #0369a1;
+.btn-electric {
+  background: #0022ff;
+  border-color: #3d6bff;
   color: #ffffff;
+  box-shadow: 0 0 15px rgba(0, 34, 255, 0.4);
 }
-.btn-primary:hover {
-  background: #0369a1;
+.btn-electric:hover {
+  background: #1435ff;
+  border-color: #ffffff;
 }
 .btn-cyan {
-  background: rgba(6, 182, 212, 0.15);
-  color: #22d3ee;
-  border-color: rgba(6, 182, 212, 0.4);
+  background: rgba(0, 240, 255, 0.12);
+  color: #00f0ff;
+  border-color: #00f0ff;
 }
 .btn-cyan:hover {
-  background: rgba(6, 182, 212, 0.25);
+  background: rgba(0, 240, 255, 0.25);
+  box-shadow: var(--shadow-cyan);
+}
+.btn-outline {
+  background: transparent;
+  color: #ffffff;
+  border: 1px solid var(--border-bright);
+}
+.btn-outline:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: #ffffff;
 }

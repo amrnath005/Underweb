@@ -1,6 +1,7 @@
 // src/ui/graph/graph-renderer.js
 // Interactive HTML5 Canvas force-directed graph renderer with physics simulation,
 // zoom, pan, node drag, search, filtering, and path highlighting.
+// Styled in Underweb's Electric Cobalt & Scorpion theme.
 
 export class GraphRenderer {
   /**
@@ -34,8 +35,8 @@ export class GraphRenderer {
     this.alpha = 1.0;
     this.alphaMin = 0.001;
     this.alphaDecay = 0.02;
-    this.repulsion = 400;
-    this.springLength = 85;
+    this.repulsion = 420;
+    this.springLength = 90;
     this.springStrength = 0.06;
     this.centerGravity = 0.02;
 
@@ -47,11 +48,11 @@ export class GraphRenderer {
   setData(graphJson) {
     this.nodes = (graphJson.nodes || []).map(n => ({
       ...n,
-      x: (Math.random() - 0.5) * 300,
-      y: (Math.random() - 0.5) * 300,
+      x: (Math.random() - 0.5) * 320,
+      y: (Math.random() - 0.5) * 320,
       vx: 0,
       vy: 0,
-      radius: n.radius || (n.type === 'WEBSITE' ? 22 : n.type === 'API' ? 14 : 16)
+      radius: n.radius || (n.type === 'WEBSITE' ? 24 : n.type === 'API' ? 14 : 16)
     }));
 
     this.nodeMap = new Map(this.nodes.map(n => [n.id, n]));
@@ -62,7 +63,6 @@ export class GraphRenderer {
       targetNode: this.nodeMap.get(typeof l.target === 'object' ? l.target.id : l.target)
     })).filter(l => l.sourceNode && l.targetNode);
 
-    // Warm up simulation
     this.alpha = 1.0;
   }
 
@@ -161,7 +161,6 @@ export class GraphRenderer {
   tickPhysics() {
     if (this.alpha < this.alphaMin) return;
 
-    // 1. Repulsion between nodes (Coulomb)
     for (let i = 0; i < this.nodes.length; i++) {
       const n1 = this.nodes[i];
       for (let j = i + 1; j < this.nodes.length; j++) {
@@ -182,7 +181,6 @@ export class GraphRenderer {
       }
     }
 
-    // 2. Spring Attraction along links (Hooke)
     for (const link of this.links) {
       const s = link.sourceNode;
       const t = link.targetNode;
@@ -200,13 +198,12 @@ export class GraphRenderer {
       t.vy -= fy;
     }
 
-    // 3. Center gravity and position integration
     for (const node of this.nodes) {
       if (node === this.draggedNode) continue;
       node.vx -= node.x * this.centerGravity * this.alpha;
       node.vy -= node.y * this.centerGravity * this.alpha;
 
-      node.vx *= 0.82; // Friction damping
+      node.vx *= 0.82;
       node.vy *= 0.82;
 
       node.x += node.vx;
@@ -247,27 +244,27 @@ export class GraphRenderer {
       ctx.lineTo(t.x, t.y);
 
       if (isPathHighlighted) {
-        ctx.strokeStyle = '#f59e0b';
+        ctx.strokeStyle = '#ffaa00';
         ctx.lineWidth = 3;
       } else if (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)) {
-        ctx.strokeStyle = '#38bdf8';
+        ctx.strokeStyle = '#00f0ff';
         ctx.lineWidth = 2;
       } else {
-        ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+        ctx.strokeStyle = 'rgba(22, 36, 86, 0.7)';
         ctx.lineWidth = 1;
       }
       ctx.stroke();
 
-      // Relation badge on midpoint if highlighted or zoomed
+      // Relation badge on midpoint if highlighted or selected
       if (this.transform.scale > 0.85 && (isPathHighlighted || (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)))) {
         const mx = (s.x + t.x) / 2;
         const my = (s.y + t.y) / 2;
-        ctx.fillStyle = '#0f172a';
-        ctx.font = '9px monospace';
-        const labelText = link.relation || '';
+        ctx.fillStyle = '#050a1c';
+        ctx.font = '9px "Space Mono", monospace';
+        const labelText = `[ ${link.relation || ''} ]`;
         const tw = ctx.measureText(labelText).width;
         ctx.fillRect(mx - tw / 2 - 2, my - 6, tw + 4, 12);
-        ctx.fillStyle = isPathHighlighted ? '#fbbf24' : '#94a3b8';
+        ctx.fillStyle = isPathHighlighted ? '#ffaa00' : '#00f0ff';
         ctx.fillText(labelText, mx - tw / 2, my + 3);
       }
     }
@@ -285,35 +282,35 @@ export class GraphRenderer {
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
 
-      let fillColor = '#1e293b';
-      if (node.type === 'WEBSITE') fillColor = '#0284c7';
-      else if (node.type === 'FRAMEWORK') fillColor = '#06b6d4';
-      else if (node.type === 'LIBRARY') fillColor = '#8b5cf6';
-      else if (node.type === 'API') fillColor = '#10b981';
-      else if (node.type === 'CDN') fillColor = '#d946ef';
-      else if (node.type === 'HOST') fillColor = '#6366f1';
+      let fillColor = '#0e1c4a';
+      if (node.type === 'WEBSITE') fillColor = '#0022ff';
+      else if (node.type === 'FRAMEWORK') fillColor = '#1d3df8';
+      else if (node.type === 'LIBRARY') fillColor = '#274bfb';
+      else if (node.type === 'API') fillColor = '#00f0ff';
+      else if (node.type === 'CDN') fillColor = '#6020f5';
+      else if (node.type === 'HOST') fillColor = '#3040d0';
       else if (node.type === 'TRACKER') fillColor = '#f43f5e';
-      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = '#0284c7';
-      else if (node.type === 'THIRD_PARTY_DOMAIN') fillColor = '#64748b';
+      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = '#0022ff';
+      else if (node.type === 'THIRD_PARTY_DOMAIN') fillColor = '#203060';
 
       if (isFiltered) {
-        ctx.fillStyle = 'rgba(30, 41, 59, 0.3)';
-        ctx.strokeStyle = 'rgba(51, 65, 85, 0.2)';
+        ctx.fillStyle = 'rgba(10, 19, 50, 0.3)';
+        ctx.strokeStyle = 'rgba(22, 36, 86, 0.2)';
       } else {
         ctx.fillStyle = fillColor;
-        ctx.strokeStyle = isSelected ? '#ffffff' : isPath ? '#fbbf24' : '#0f172a';
+        ctx.strokeStyle = isSelected ? '#ffffff' : isPath ? '#ffaa00' : (node.type === 'API' ? '#00f0ff' : '#ffffff');
       }
 
-      ctx.lineWidth = isSelected || isPath ? 2.5 : 1.5;
+      ctx.lineWidth = isSelected || isPath ? 2.5 : 1.2;
       ctx.fill();
       ctx.stroke();
 
       // Node Label
       if (!isFiltered || isSelected || isHovered) {
-        ctx.font = `${node.type === 'WEBSITE' ? '12px' : '10px'} -apple-system, sans-serif`;
-        ctx.fillStyle = isSelected ? '#ffffff' : '#f1f5f9';
+        ctx.font = `${node.type === 'WEBSITE' ? 'bold 12px' : '10px'} "Space Grotesk", sans-serif`;
+        ctx.fillStyle = isSelected ? '#00f0ff' : '#ffffff';
         ctx.textAlign = 'center';
-        ctx.fillText(node.label || node.id, node.x, node.y + radius + 12);
+        ctx.fillText(node.label || node.id, node.x, node.y + radius + 13);
       }
     }
 
