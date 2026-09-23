@@ -265,12 +265,22 @@
             </div>
             <div class="graph-actions">
               <button id="btnRunDijkstra" class="btn btn-outline btn-sm">Path to Tracker</button>
-              <button id="btnRunCentrality" class="btn btn-outline btn-sm">Betweenness Centrality</button>
-              <button id="btnResetGraph" class="btn btn-outline btn-sm">Reset View</button>
+              <button id="btnRunCentrality" class="btn btn-outline btn-sm">Centrality Bridges</button>
+              <button id="btnFitGraph" class="btn btn-outline btn-sm">Fit View</button>
+              <button id="btnZoomIn" class="btn btn-outline btn-sm" title="Zoom In">+</button>
+              <button id="btnZoomOut" class="btn btn-outline btn-sm" title="Zoom Out">−</button>
             </div>
           </div>
 
           <div class="graph-viewport-wrap">
+            <div class="graph-legend-overlay">
+              <span class="legend-item"><span class="legend-dot dot-website"></span>Website</span>
+              <span class="legend-item"><span class="legend-dot dot-framework"></span>Framework</span>
+              <span class="legend-item"><span class="legend-dot dot-api"></span>API</span>
+              <span class="legend-item"><span class="legend-dot dot-cdn"></span>CDN</span>
+              <span class="legend-item"><span class="legend-dot dot-tracker"></span>Tracker</span>
+              <span class="legend-item"><span class="legend-dot dot-origin"></span>Origin</span>
+            </div>
             <canvas id="architectureCanvas" class="architecture-canvas" width="900" height="520"></canvas>
             <div id="nodeInspectorDrawer" class="node-inspector-drawer">
               <div class="drawer-header">

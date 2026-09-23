@@ -129,10 +129,23 @@ function setupActions() {
     }
   });
 
+  addListener('btnFitGraph', 'click', () => {
+    if (graphRenderer) graphRenderer.fitToScreen();
+  });
+
+  addListener('btnZoomIn', 'click', () => {
+    if (graphRenderer) graphRenderer.zoomIn();
+  });
+
+  addListener('btnZoomOut', 'click', () => {
+    if (graphRenderer) graphRenderer.zoomOut();
+  });
+
   // Drawer close
   addListener('closeDrawerBtn', 'click', () => {
     const drawer = document.getElementById('nodeInspectorDrawer');
-    if (drawer) drawer.style.display = 'none';
+    if (drawer) drawer.classList.remove('visible');
+    if (graphRenderer) graphRenderer.selectedNode = null;
   });
 
   // Modal close
@@ -656,23 +669,27 @@ function handleNodeSelect(node) {
   const title = document.getElementById('drawerNodeTitle');
   const body = document.getElementById('drawerBody');
 
+  if (!drawer) return;
+
   if (!node) {
-    drawer.style.display = 'none';
+    drawer.classList.remove('visible');
     return;
   }
 
-  drawer.style.display = 'flex';
-  title.textContent = node.label || node.id;
+  drawer.classList.add('visible');
+  if (title) title.textContent = node.label || node.id;
   const inDeg = activeGraph ? activeGraph.getInDegree(node.id) : 0;
   const outDeg = activeGraph ? activeGraph.getOutDegree(node.id) : 0;
 
-  body.innerHTML = `
-    <div><strong>Node Type:</strong> <span class="badge badge-cyan">${node.type}</span></div>
-    <div style="margin-top: 8px;"><strong>In-Degree:</strong> ${inDeg} (Incoming dependencies)</div>
-    <div><strong>Out-Degree:</strong> ${outDeg} (Outgoing dependencies)</div>
-    <div style="margin-top: 10px;"><strong>Metadata:</strong></div>
-    <pre style="background: var(--bg-muted); color: var(--text-primary); border: 1px solid var(--border); padding: 8px; border-radius: 4px; font-size: 11px; overflow-x: auto; font-family: var(--font-mono);">${JSON.stringify(node.metadata || {}, null, 2)}</pre>
-  `;
+  if (body) {
+    body.innerHTML = `
+      <div style="margin-bottom: 8px;"><strong>Node Type:</strong> <span class="badge badge-crimson" style="margin-left: 4px;">${node.type}</span></div>
+      <div style="margin-bottom: 4px;"><strong>In-Degree:</strong> ${inDeg} (Incoming dependencies)</div>
+      <div style="margin-bottom: 12px;"><strong>Out-Degree:</strong> ${outDeg} (Outgoing dependencies)</div>
+      <div><strong>Metadata:</strong></div>
+      <pre style="background: var(--bg-well); color: var(--text-primary); border: 1px solid var(--border); padding: 8px; border-radius: var(--radius-xs); font-size: 11px; overflow-x: auto; font-family: var(--font-mono); margin-top: 6px;">${JSON.stringify(node.metadata || {}, null, 2)}</pre>
+    `;
+  }
 }
 
 // Multi-Format Export Functions
