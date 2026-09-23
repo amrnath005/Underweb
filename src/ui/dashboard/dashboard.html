@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <title>Underweb — Deep Intelligence & Architecture Substrate</title>
@@ -8,34 +8,45 @@
 </head>
 <body>
   <div class="app-layout">
-    <!-- Top Bar with Scorpion Motif -->
+
+    <!-- ═══════════════════════════════════════════════
+         TOPBAR
+    ═══════════════════════════════════════════════ -->
     <header class="topbar">
       <div class="topbar-left">
+        <!-- Brand -->
         <div class="brand">
           <img src="../../../assets/branding/scorpion.svg" alt="Underweb Scorpion" width="28" height="28" class="brand-scorpion">
           <div class="brand-col">
             <span class="brand-title">UNDERWEB</span>
-            <span class="brand-sub">SCORPION INTELLIGENCE // SUBSTRATE v1.0</span>
+            <span class="brand-sub">Architecture Exoskeleton · v1.0</span>
           </div>
-          <span class="badge badge-cobalt">[ ACTIVE ]</span>
+          <span class="badge badge-amber" style="margin-left:4px">Live</span>
         </div>
+
+        <!-- Target site pill -->
         <div class="target-site-indicator">
-          <span id="targetProtocol" class="text-muted">https://</span>
+          <span id="targetProtocol" class="text-muted" style="font-size:11px">https://</span>
           <span id="targetHostname" class="target-host">Connecting to target tab...</span>
-          <span id="targetStatusBadge" class="badge badge-cyan">[ 200 OK ]</span>
+          <span id="targetStatusBadge" class="badge badge-venom">200 OK</span>
         </div>
       </div>
+
       <div class="topbar-right">
-        <button id="refreshBtn" class="btn btn-sm btn-outline" title="Refresh session telemetry">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <!-- Theme toggle -->
+        <button id="themeToggleBtn" class="btn-theme" title="Toggle light / dark mode">☀️</button>
+
+        <button id="refreshBtn" class="btn btn-outline btn-sm" title="Refresh session telemetry">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
-          Re-Scan Tab
+          Re-Scan
         </button>
-        <button id="exportDropdownBtn" class="btn btn-electric btn-sm">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+
+        <button id="exportDropdownBtn" class="btn btn-primary btn-sm">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -45,11 +56,15 @@
       </div>
     </header>
 
-    <!-- Main Workspace -->
+    <!-- ═══════════════════════════════════════════════
+         WORKSPACE
+    ═══════════════════════════════════════════════ -->
     <div class="workspace">
-      <!-- Navigation Sidebar with Editorial Indexing -->
+
+      <!-- Sidebar -->
       <nav class="sidebar">
-        <div class="nav-section-title">// SYSTEM RECON</div>
+        <div class="nav-section-title">System Recon</div>
+
         <button class="nav-item active" data-tab="tab-overview">
           <span class="nav-num">01</span> Overview
         </button>
@@ -75,7 +90,8 @@
           <span class="nav-num">08</span> API Explorer
         </button>
 
-        <div class="nav-section-title">// INVESTIGATION</div>
+        <div class="nav-section-title">Investigation</div>
+
         <button class="nav-item" data-tab="tab-investigator">
           <span class="nav-num">09</span> Click Investigator
         </button>
@@ -89,40 +105,42 @@
           <span class="nav-num">12</span> History & Export
         </button>
 
-        <!-- Sidebar Scorpion Footer Badge -->
+        <!-- Footer -->
         <div class="sidebar-footer-scorpion">
-          <img src="../../../assets/branding/scorpion.svg" alt="Scorpion" width="22" height="22" opacity="0.7">
+          <img src="../../../assets/branding/scorpion.svg" alt="Scorpion" width="20" height="20" style="opacity:0.6">
           <div class="scorpion-meta">
-            <span>SUBSTRATE RADAR</span>
-            <span class="scorpion-status">ONLINE // 100% LOCAL</span>
+            <span>Substrate Radar</span>
+            <span class="scorpion-status">Online · 100% Local</span>
           </div>
         </div>
       </nav>
 
-      <!-- Panel Content Area -->
+      <!-- ═══════════════════════════════════════════
+           CONTENT PANELS
+      ═══════════════════════════════════════════ -->
       <main class="content-viewport">
 
-        <!-- 1. OVERVIEW TAB -->
+        <!-- ── 1. OVERVIEW ── -->
         <section id="tab-overview" class="tab-panel active">
-          <!-- Hero Header in Bebas Neue & Editorial Subtext -->
+          <!-- Hero banner -->
           <div class="editorial-hero-banner">
             <div class="hero-text-col">
-              <div class="hero-kicker">// EXOSKELETON RECONNAISSANCE</div>
+              <div class="hero-kicker">Exoskeleton Reconnaissance</div>
               <h1 class="hero-title">EXPLORE THE TECHNOLOGY BENEATH EVERY WEBSITE</h1>
               <p class="hero-subtitle">Multi-signal runtime telemetry, protocol dissection, and directed dependency mapping synthesized into a technical case study.</p>
             </div>
             <div class="hero-scorpion-badge">
-              <img src="../../../assets/branding/scorpion.svg" alt="Scorpion Stinger" width="56" height="56">
+              <img src="../../../assets/branding/scorpion.svg" alt="Scorpion Stinger" width="52" height="52">
             </div>
           </div>
 
-          <!-- Hero Grid -->
+          <!-- DNA + Architecture grid -->
           <div class="hero-grid">
             <!-- DNA Radar Card -->
             <div class="card dna-card">
               <div class="card-header">
                 <span class="card-title">🧬 Website DNA Complexity Vector</span>
-                <span class="badge badge-cyan" id="dnaScoreBadge">[ BALANCED ]</span>
+                <span class="badge badge-amber" id="dnaScoreBadge">Balanced</span>
               </div>
               <div class="dna-canvas-wrap">
                 <canvas id="dnaCanvas" width="340" height="260"></canvas>
@@ -133,13 +151,13 @@
             <div class="card arch-card">
               <div class="card-header">
                 <span class="card-title">🏛️ Inferred System Archetype</span>
-                <span class="badge badge-cobalt" id="archConfidenceBadge">[ HIGH CONFIDENCE ]</span>
+                <span class="badge badge-venom" id="archConfidenceBadge">High Confidence</span>
               </div>
               <div class="arch-body">
                 <div class="arch-name" id="inferredArchName">Server-Side Rendered (SSR) Hydrated App</div>
                 <p class="arch-expl" id="inferredArchExpl">Hydrated client JavaScript takes over an initial server-rendered HTML document, orchestrating API data flow.</p>
                 <div class="arch-signals-box">
-                  <div class="signals-title">// Observable Substrate Proofs:</div>
+                  <div class="signals-title">Observable Substrate Proofs</div>
                   <ul id="archSignalsList" class="signals-list">
                     <li>Initial document markup contains pre-rendered DOM</li>
                     <li>Hydration payload detected in window script tag</li>
@@ -149,8 +167,8 @@
             </div>
           </div>
 
-          <!-- Quick Metrics Tiles -->
-          <div class="metrics-row">
+          <!-- Quick Metrics -->
+          <div class="metrics-row stagger">
             <div class="card metric-tile">
               <div class="tile-icon">🌐</div>
               <div class="tile-data">
@@ -189,25 +207,23 @@
           </div>
         </section>
 
-        <!-- 2. STACK TAB -->
+        <!-- ── 2. TECH STACK ── -->
         <section id="tab-stack" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// SUBSTRATE SIGNATURES</div>
+              <div class="hero-kicker">Substrate Signatures</div>
               <h2>Detected Technology Stack</h2>
+              <p class="panel-desc">Evidence-backed detection of frameworks, libraries, build tools, CMS, analytics, and cloud providers.</p>
             </div>
-            <p class="panel-desc">Evidence-backed detection of frameworks, libraries, build tools, CMS, analytics, and cloud providers.</p>
           </div>
-          <div id="techStackGrid" class="stack-grid">
-            <!-- Dynamically populated -->
-          </div>
+          <div id="techStackGrid" class="stack-grid"></div>
         </section>
 
-        <!-- 3. NETWORK TAB -->
+        <!-- ── 3. NETWORK ── -->
         <section id="tab-network" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// NETWORK TRAFFIC</div>
+              <div class="hero-kicker">Network Traffic</div>
               <h2>Network Intelligence & Waterfall</h2>
             </div>
             <div class="network-filters">
@@ -225,34 +241,32 @@
             </div>
           </div>
 
-          <!-- First Contact Card -->
+          <!-- First Contact -->
           <div class="card first-contact-card">
             <div class="card-header">
               <span class="card-title">⏱️ "First Contact" Sequence</span>
-              <span class="badge badge-cobalt">[ INITIAL BOOT HANDSHAKE ]</span>
+              <span class="badge badge-amber">Initial Boot Handshake</span>
             </div>
-            <div id="firstContactList" class="first-contact-row">
-              <!-- Dynamically populated -->
-            </div>
+            <div id="firstContactList" class="first-contact-row"></div>
           </div>
 
-          <!-- Network Waterfall Container -->
+          <!-- Waterfall -->
           <div class="card waterfall-card">
             <div id="waterfallContainer" class="waterfall-container"></div>
           </div>
         </section>
 
-        <!-- 4. ARCHITECTURE GRAPH TAB -->
+        <!-- ── 4. ARCHITECTURE GRAPH ── -->
         <section id="tab-architecture" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// DIRECTED DEPENDENCY TOPOLOGY</div>
+              <div class="hero-kicker">Directed Dependency Topology</div>
               <h2>Interactive Architecture Graph</h2>
             </div>
             <div class="graph-actions">
-              <button id="btnRunDijkstra" class="btn btn-sm btn-cyan">[ Shortest Path to Tracker ]</button>
-              <button id="btnRunCentrality" class="btn btn-sm btn-outline">[ Betweenness Centrality ]</button>
-              <button id="btnResetGraph" class="btn btn-sm btn-outline">[ Reset Camera ]</button>
+              <button id="btnRunDijkstra" class="btn btn-venom btn-sm">Shortest Path to Tracker</button>
+              <button id="btnRunCentrality" class="btn btn-outline btn-sm">Betweenness Centrality</button>
+              <button id="btnResetGraph" class="btn btn-outline btn-sm">Reset Camera</button>
             </div>
           </div>
 
@@ -271,34 +285,32 @@
           </div>
         </section>
 
-        <!-- 5. INFRASTRUCTURE TAB -->
+        <!-- ── 5. INFRASTRUCTURE ── -->
         <section id="tab-infrastructure" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// EDGE & CLOUD RESOLUTION</div>
+              <div class="hero-kicker">Edge & Cloud Resolution</div>
               <h2>Infrastructure & Cloud Topology</h2>
+              <p class="panel-desc">End-to-end client-to-origin resolution pipeline mapping DNS, IP, ASN, CDN, and Origin Host.</p>
             </div>
-            <p class="panel-desc">End-to-end client-to-origin resolution pipeline mapping DNS, IP, ASN, CDN, and Origin Host.</p>
           </div>
-          <div id="infraPipelineContainer" class="infra-pipeline">
-            <!-- Pipeline steps dynamically populated -->
-          </div>
+          <div id="infraPipelineContainer" class="infra-pipeline"></div>
         </section>
 
-        <!-- 6. PRIVACY TAB -->
+        <!-- ── 6. PRIVACY ── -->
         <section id="tab-privacy" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// SURVEILLANCE VECTORS</div>
+              <div class="hero-kicker">Surveillance Vectors</div>
               <h2>Privacy & Client Storage Audit</h2>
+              <p class="panel-desc">Analysis of browser tracking, persistent storage, cookies, and hardware API surveillance.</p>
             </div>
-            <p class="panel-desc">Analysis of browser tracking, persistent storage, cookies, and hardware API surveillance.</p>
           </div>
           <div class="privacy-grid">
             <div class="card">
               <div class="card-header">
                 <span class="card-title">🍪 Cookie Security & Hygiene</span>
-                <span id="cookieSummaryBadge" class="badge badge-outline">0 Total</span>
+                <span id="cookieSummaryBadge" class="badge badge-neutral">0 Total</span>
               </div>
               <div id="cookieIssuesContainer" class="privacy-list"></div>
             </div>
@@ -323,14 +335,14 @@
           </div>
         </section>
 
-        <!-- 7. SECURITY TAB -->
+        <!-- ── 7. SECURITY ── -->
         <section id="tab-security" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// DEFENSIVE POSTURE</div>
+              <div class="hero-kicker">Defensive Posture</div>
               <h2>Security Posture & Vulnerability Heuristics</h2>
+              <p class="panel-desc">Inspection of CSP defense-in-depth, HSTS, CORS wildcard risks, and mixed content.</p>
             </div>
-            <p class="panel-desc">Inspection of CSP defense-in-depth, HSTS, CORS wildcard risks, and mixed content.</p>
           </div>
           <div class="security-layout">
             <div class="security-score-banner">
@@ -349,67 +361,63 @@
           </div>
         </section>
 
-        <!-- 8. APIS TAB -->
+        <!-- ── 8. APIS ── -->
         <section id="tab-apis" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// DATA PROTOCOLS</div>
+              <div class="hero-kicker">Data Protocols</div>
               <h2>API & Protocol Explorer</h2>
+              <p class="panel-desc">Catalog of REST endpoints, GraphQL operations, and WebSockets observed during interaction.</p>
             </div>
-            <p class="panel-desc">Catalog of REST endpoints, GraphQL operations, and WebSockets observed during interaction.</p>
           </div>
           <div class="card">
             <div class="card-header">
               <span class="card-title">🔌 Observed API Transactions</span>
-              <span id="apiCountBadge" class="badge badge-emerald">[ 0 Endpoints ]</span>
+              <span id="apiCountBadge" class="badge badge-venom">0 Endpoints</span>
             </div>
             <div id="apiListContainer" class="api-list"></div>
           </div>
         </section>
 
-        <!-- 9. INVESTIGATOR TAB ("What Happens When I Click?") -->
+        <!-- ── 9. CLICK INVESTIGATOR ── -->
         <section id="tab-investigator" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// EVENT DISSECTION</div>
-              <h2>"What Happens When I Click?" (Interaction Investigator)</h2>
+              <div class="hero-kicker">Event Dissection</div>
+              <h2>"What Happens When I Click?"</h2>
             </div>
             <div class="investigator-controls">
-              <button id="toggleInvestigatorBtn" class="btn btn-electric">
+              <button id="toggleInvestigatorBtn" class="btn btn-primary">
                 ▶ Start Investigation Mode
               </button>
-              <button id="clearInvestigatorBtn" class="btn btn-sm btn-outline">Clear Log</button>
+              <button id="clearInvestigatorBtn" class="btn btn-outline btn-sm">Clear Log</button>
             </div>
           </div>
           <div class="card">
-            <div id="clickTimelineContainer" class="click-timeline-container">
-              <!-- Dynamically populated -->
-            </div>
+            <div id="clickTimelineContainer" class="click-timeline-container"></div>
           </div>
         </section>
 
-        <!-- 10. LEARN TAB (Student Learning Mode) -->
+        <!-- ── 10. LEARN ── -->
         <section id="tab-learn" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// COMPUTER SCIENCE DOSSIER</div>
+              <div class="hero-kicker">Computer Science Dossier</div>
               <h2>Student Learning Mode & Architecture Wiki</h2>
             </div>
             <input type="text" id="learnSearchInput" class="input-search" placeholder="Search concepts (e.g. Next.js, HTTP/2, CSP, Redis)...">
           </div>
-          <div id="learnGrid" class="learn-grid">
-            <!-- Dynamically populated -->
-          </div>
+          <div id="learnGrid" class="learn-grid"></div>
         </section>
 
-        <!-- 11. COMPARE TAB -->
+        <!-- ── 11. COMPARE ── -->
         <section id="tab-compare" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// SIDE-BY-SIDE DIFF</div>
+              <div class="hero-kicker">Side-by-Side Diff</div>
               <h2>Website Comparison Engine</h2>
+              <p class="panel-desc">Compare the technology stack, network footprint, and security posture of two websites side-by-side.</p>
             </div>
-            <p class="panel-desc">Compare the technology stack, network footprint, and security posture of two websites side-by-side.</p>
           </div>
           <div id="compareContainer" class="compare-container">
             <div class="compare-row">
@@ -429,17 +437,17 @@
           </div>
         </section>
 
-        <!-- 12. HISTORY & EXPORT TAB -->
+        <!-- ── 12. HISTORY ── -->
         <section id="tab-history" class="tab-panel">
           <div class="panel-header">
             <div>
-              <div class="hero-kicker">// PERSISTENCE & ARCHIVES</div>
+              <div class="hero-kicker">Persistence & Archives</div>
               <h2>Inspection History & Local Storage</h2>
             </div>
             <div class="export-btn-group">
-              <button id="exportJsonBtn" class="btn btn-sm btn-outline">Download JSON</button>
-              <button id="exportMdBtn" class="btn btn-sm btn-electric">Download Markdown</button>
-              <button id="exportCsvBtn" class="btn btn-sm btn-outline">Download Network CSV</button>
+              <button id="exportJsonBtn" class="btn btn-outline btn-sm">Download JSON</button>
+              <button id="exportMdBtn" class="btn btn-primary btn-sm">Download Markdown</button>
+              <button id="exportCsvBtn" class="btn btn-outline btn-sm">Download CSV</button>
             </div>
           </div>
           <div class="card">
@@ -464,6 +472,45 @@
       </div>
     </div>
   </div>
+
+  <!-- Theme toggle script (inline so it runs immediately, no flash) -->
+  <script>
+    (function() {
+      const saved = localStorage.getItem('uw-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', saved);
+      const btn = document.getElementById('themeToggleBtn');
+      if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+    })();
+
+    document.addEventListener('DOMContentLoaded', function() {
+      const btn = document.getElementById('themeToggleBtn');
+      if (!btn) return;
+      btn.addEventListener('click', function() {
+        const html = document.documentElement;
+        const current = html.getAttribute('data-theme') || 'light';
+        const next = current === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('uw-theme', next);
+        btn.textContent = next === 'dark' ? '☀️' : '🌙';
+        // Animate btn
+        btn.style.transform = 'rotate(180deg) scale(0.8)';
+        setTimeout(() => { btn.style.transform = ''; }, 300);
+      });
+
+      // Node inspector drawer: show/hide via JS class
+      const drawer = document.getElementById('nodeInspectorDrawer');
+      if (drawer) {
+        // Make it visible by default for demo purposes
+        // dashboard.js will control this
+      }
+
+      // Close drawer
+      const closeDrawer = document.getElementById('closeDrawerBtn');
+      if (closeDrawer && drawer) {
+        closeDrawer.addEventListener('click', () => drawer.classList.remove('visible'));
+      }
+    });
+  </script>
 
   <script type="module" src="dashboard.js"></script>
 </body>

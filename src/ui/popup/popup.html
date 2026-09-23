@@ -1,37 +1,54 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
   <title>Underweb — Architecture Exoskeleton</title>
   <link rel="stylesheet" href="../styles/theme.css">
   <link rel="stylesheet" href="popup.css">
+  <!-- Immediate theme restore — no flash -->
+  <script>
+    (function() {
+      var t = localStorage.getItem('uw-theme') || 'light';
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
 </head>
 <body>
   <div class="popup-container">
-    <!-- Header with Scorpion Motif -->
+
+    <!-- ══════════════════════════════════════
+         HEADER
+    ══════════════════════════════════════ -->
     <header class="popup-header">
       <div class="brand">
         <div class="brand-icon">
-          <img src="../../../assets/branding/scorpion.svg" alt="Underweb Scorpion" width="28" height="28">
+          <img src="../../../assets/branding/scorpion.svg" alt="Underweb Scorpion" width="26" height="26">
         </div>
         <div class="brand-text">
           <span class="brand-name">UNDERWEB</span>
-          <span class="brand-tagline">ARCHITECTURE EXOSKELETON</span>
+          <span class="brand-tagline">Architecture Exoskeleton</span>
         </div>
       </div>
-      <div id="protocolBadge" class="badge badge-cobalt">[ TLS 1.3 ]</div>
+      <div class="header-right">
+        <button id="themeToggleBtn" class="btn-theme" title="Toggle light / dark">🌙</button>
+        <div id="protocolBadge" class="badge badge-amber">TLS 1.3</div>
+      </div>
     </header>
 
-    <!-- Target Site Info Bar -->
+    <!-- ══════════════════════════════════════
+         SITE BAR
+    ══════════════════════════════════════ -->
     <div class="site-bar">
       <div class="site-host-wrap">
         <span id="siteProtocol" class="site-protocol">https://</span>
         <span id="siteHostname" class="site-host">Scanning substrate...</span>
       </div>
-      <span id="securityBadge" class="badge badge-emerald">[ SECURE ]</span>
+      <span id="securityBadge" class="badge badge-venom">Secure</span>
     </div>
 
-    <!-- Website DNA Metrics Grid -->
+    <!-- ══════════════════════════════════════
+         METRICS GRID
+    ══════════════════════════════════════ -->
     <div class="metrics-grid">
       <div class="metric-card">
         <span class="metric-val" id="totalRequests">0</span>
@@ -51,50 +68,80 @@
       </div>
     </div>
 
-    <!-- Detected Stack Section -->
+    <!-- ══════════════════════════════════════
+         DETECTED STACK
+    ══════════════════════════════════════ -->
     <div class="section-block">
       <div class="section-title">
-        <span>[ 01 // DETECTED SUBSTRATE ]</span>
-        <span id="techCountBadge" class="badge badge-outline">0 TECHS</span>
+        <span>01 · Detected Substrate</span>
+        <span id="techCountBadge" class="badge badge-neutral">0 Techs</span>
       </div>
       <div id="techBadgesContainer" class="badges-row">
         <span class="empty-state-text">Probing runtime globals & DOM markers...</span>
       </div>
     </div>
 
-    <!-- Infrastructure & Delivery -->
+    <!-- ══════════════════════════════════════
+         INFRASTRUCTURE
+    ══════════════════════════════════════ -->
     <div class="section-block">
       <div class="section-title">
-        <span>[ 02 // INFRASTRUCTURE & EDGE ]</span>
+        <span>02 · Infrastructure & Edge</span>
       </div>
       <div id="infraBadgesContainer" class="badges-row">
         <span class="empty-state-text">Tracing CDN edge & origin host...</span>
       </div>
     </div>
 
-    <!-- Client Storage & Privacy -->
+    <!-- ══════════════════════════════════════
+         CLIENT FOOTPRINT
+    ══════════════════════════════════════ -->
     <div class="section-block">
       <div class="section-title">
-        <span>[ 03 // CLIENT FOOTPRINT ]</span>
+        <span>03 · Client Footprint</span>
       </div>
       <div id="storageBadgesContainer" class="badges-row">
-        <span class="badge badge-slate" id="cookieMetric">0 Cookies</span>
-        <span class="badge badge-slate" id="storageMetric">0 LocalStorage</span>
+        <span class="badge badge-neutral" id="cookieMetric">0 Cookies</span>
+        <span class="badge badge-neutral" id="storageMetric">0 LocalStorage</span>
       </div>
     </div>
 
-    <!-- Footer Action -->
+    <!-- ══════════════════════════════════════
+         FOOTER ACTION
+    ══════════════════════════════════════ -->
     <footer class="popup-footer">
-      <button id="openDashboardBtn" class="btn btn-electric full-width">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <button id="openDashboardBtn" class="btn-dashboard">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
           <line x1="3" y1="9" x2="21" y2="9"></line>
           <line x1="9" y1="21" x2="9" y2="9"></line>
         </svg>
-        OPEN DEEP INTELLIGENCE DASHBOARD &raquo;
+        Open Deep Intelligence Dashboard
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M5 12h14M12 5l7 7-7 7"/>
+        </svg>
       </button>
     </footer>
   </div>
+
+  <!-- Theme toggle logic -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      var btn = document.getElementById('themeToggleBtn');
+      var html = document.documentElement;
+      // Sync icon to current theme
+      var current = html.getAttribute('data-theme') || 'light';
+      btn.textContent = current === 'dark' ? '☀️' : '🌙';
+
+      btn.addEventListener('click', function() {
+        var curr = html.getAttribute('data-theme') || 'light';
+        var next = curr === 'light' ? 'dark' : 'light';
+        html.setAttribute('data-theme', next);
+        localStorage.setItem('uw-theme', next);
+        btn.textContent = next === 'dark' ? '☀️' : '🌙';
+      });
+    });
+  </script>
 
   <script type="module" src="popup.js"></script>
 </body>

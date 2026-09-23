@@ -226,6 +226,8 @@ export class GraphRenderer {
     const { ctx, canvas } = this;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
     ctx.save();
     ctx.translate(this.transform.x, this.transform.y);
     ctx.scale(this.transform.scale, this.transform.scale);
@@ -244,13 +246,13 @@ export class GraphRenderer {
       ctx.lineTo(t.x, t.y);
 
       if (isPathHighlighted) {
-        ctx.strokeStyle = '#ffaa00';
+        ctx.strokeStyle = isDark ? '#D4A017' : '#C8860A';
         ctx.lineWidth = 3;
       } else if (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)) {
-        ctx.strokeStyle = '#00f0ff';
+        ctx.strokeStyle = isDark ? '#8DB600' : '#6E9B00';
         ctx.lineWidth = 2;
       } else {
-        ctx.strokeStyle = 'rgba(22, 36, 86, 0.7)';
+        ctx.strokeStyle = isDark ? 'rgba(58, 48, 32, 0.8)' : 'rgba(206, 198, 180, 0.8)';
         ctx.lineWidth = 1;
       }
       ctx.stroke();
@@ -259,12 +261,12 @@ export class GraphRenderer {
       if (this.transform.scale > 0.85 && (isPathHighlighted || (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)))) {
         const mx = (s.x + t.x) / 2;
         const my = (s.y + t.y) / 2;
-        ctx.fillStyle = '#050a1c';
+        ctx.fillStyle = isDark ? '#1A1610' : '#F3EFE6';
         ctx.font = '9px "Space Mono", monospace';
         const labelText = `[ ${link.relation || ''} ]`;
         const tw = ctx.measureText(labelText).width;
-        ctx.fillRect(mx - tw / 2 - 2, my - 6, tw + 4, 12);
-        ctx.fillStyle = isPathHighlighted ? '#ffaa00' : '#00f0ff';
+        ctx.fillRect(mx - tw / 2 - 3, my - 7, tw + 6, 14);
+        ctx.fillStyle = isPathHighlighted ? (isDark ? '#D4A017' : '#C8860A') : (isDark ? '#8DB600' : '#6E9B00');
         ctx.fillText(labelText, mx - tw / 2, my + 3);
       }
     }
@@ -282,23 +284,25 @@ export class GraphRenderer {
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
 
-      let fillColor = '#0e1c4a';
-      if (node.type === 'WEBSITE') fillColor = '#0022ff';
-      else if (node.type === 'FRAMEWORK') fillColor = '#1d3df8';
-      else if (node.type === 'LIBRARY') fillColor = '#274bfb';
-      else if (node.type === 'API') fillColor = '#00f0ff';
-      else if (node.type === 'CDN') fillColor = '#6020f5';
-      else if (node.type === 'HOST') fillColor = '#3040d0';
-      else if (node.type === 'TRACKER') fillColor = '#f43f5e';
-      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = '#0022ff';
-      else if (node.type === 'THIRD_PARTY_DOMAIN') fillColor = '#203060';
+      // Scorpion Amber Palette for node types
+      let fillColor = isDark ? '#231E16' : '#EDE8DE';
+      if (node.type === 'WEBSITE')             fillColor = isDark ? '#C8860A' : '#D4960E';
+      else if (node.type === 'FRAMEWORK')      fillColor = isDark ? '#8B5A00' : '#B87213';
+      else if (node.type === 'LIBRARY')        fillColor = isDark ? '#6B4200' : '#A0620C';
+      else if (node.type === 'API')            fillColor = isDark ? '#5A8000' : '#6E9B00';
+      else if (node.type === 'CDN')            fillColor = isDark ? '#4A5A00' : '#7A8800';
+      else if (node.type === 'HOST')           fillColor = isDark ? '#3A3020' : '#CEC6B4';
+      else if (node.type === 'TRACKER')        fillColor = isDark ? '#D93B55' : '#E05070';
+      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = isDark ? '#A06B00' : '#C8860A';
+      else if (node.type === 'THIRD_PARTY_DOMAIN') fillColor = isDark ? '#2A2418' : '#E6E0D4';
 
       if (isFiltered) {
-        ctx.fillStyle = 'rgba(10, 19, 50, 0.3)';
-        ctx.strokeStyle = 'rgba(22, 36, 86, 0.2)';
+        ctx.fillStyle = isDark ? 'rgba(26, 22, 16, 0.3)' : 'rgba(243, 239, 230, 0.3)';
+        ctx.strokeStyle = isDark ? 'rgba(58, 48, 32, 0.2)' : 'rgba(206, 198, 180, 0.2)';
       } else {
         ctx.fillStyle = fillColor;
-        ctx.strokeStyle = isSelected ? '#ffffff' : isPath ? '#ffaa00' : (node.type === 'API' ? '#00f0ff' : '#ffffff');
+        const strokeBase = isPath ? (isDark ? '#D4A017' : '#C8860A') : (node.type === 'API' ? (isDark ? '#8DB600' : '#6E9B00') : (isDark ? '#F5ECD8' : '#1A1208'));
+        ctx.strokeStyle = isSelected ? (isDark ? '#D4A017' : '#C8860A') : strokeBase;
       }
 
       ctx.lineWidth = isSelected || isPath ? 2.5 : 1.2;
@@ -308,7 +312,7 @@ export class GraphRenderer {
       // Node Label
       if (!isFiltered || isSelected || isHovered) {
         ctx.font = `${node.type === 'WEBSITE' ? 'bold 12px' : '10px'} "Space Grotesk", sans-serif`;
-        ctx.fillStyle = isSelected ? '#00f0ff' : '#ffffff';
+        ctx.fillStyle = isSelected ? (isDark ? '#D4A017' : '#C8860A') : (isDark ? '#F5ECD8' : '#1A1208');
         ctx.textAlign = 'center';
         ctx.fillText(node.label || node.id, node.x, node.y + radius + 13);
       }

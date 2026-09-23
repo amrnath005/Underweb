@@ -1,26 +1,38 @@
-/* src/ui/popup/popup.css */
+/* ============================================================
+   UNDERWEB — Popup CSS
+   Scorpion amber theme. Light default / dark toggle.
+   ============================================================ */
 
 body {
   width: 380px;
-  background-color: var(--bg-void);
+  background: var(--bg-base);
+  color: var(--text-primary);
   overflow-x: hidden;
   user-select: none;
-  border: 1px solid var(--border-medium);
+  font-family: var(--font-sans);
+  transition: background var(--dur-slow) var(--ease-out),
+              color var(--dur-slow) var(--ease-out);
 }
 
+/* ============================================================
+   POPUP SHELL
+   ============================================================ */
 .popup-container {
   display: flex;
   flex-direction: column;
-  padding: 14px;
-  gap: 12px;
+  gap: 0;
 }
 
+/* ============================================================
+   HEADER
+   ============================================================ */
 .popup-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid var(--border-subtle);
+  padding: 14px 16px 12px;
+  background: var(--topbar-bg);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .brand {
@@ -35,35 +47,51 @@ body {
   justify-content: center;
 }
 
+.brand-icon img {
+  animation: scorpionPulse 3s ease-in-out infinite;
+}
+
 .brand-text {
   display: flex;
   flex-direction: column;
+  line-height: 1;
 }
 
 .brand-name {
   font-family: var(--font-display);
-  font-size: 24px;
-  letter-spacing: 0.08em;
-  color: #ffffff;
+  font-size: 22px;
+  letter-spacing: 0.10em;
+  color: var(--text-primary);
   line-height: 1;
 }
 
 .brand-tagline {
   font-family: var(--font-mono);
-  font-size: 8px;
+  font-size: 7.5px;
   font-weight: 700;
-  color: var(--text-cyan);
-  letter-spacing: 0.1em;
+  color: var(--text-muted);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-top: 2px;
 }
 
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ============================================================
+   SITE BAR
+   ============================================================ */
 .site-bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--radius-xs);
-  padding: 8px 10px;
+  background: var(--bg-raised);
+  border-bottom: 1px solid var(--border-light);
+  padding: 9px 16px;
+  gap: 8px;
 }
 
 .site-host-wrap {
@@ -72,69 +100,92 @@ body {
   gap: 3px;
   font-family: var(--font-mono);
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-width: 0;
+  flex: 1;
 }
 
 .site-protocol {
   color: var(--text-muted);
   font-size: 11px;
+  flex-shrink: 0;
 }
 
 .site-host {
-  color: #ffffff;
+  color: var(--text-primary);
   font-weight: 700;
   font-size: 12px;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* ============================================================
+   METRICS GRID
+   ============================================================ */
 .metrics-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
+  gap: 0;
+  border-bottom: 1px solid var(--border-light);
 }
 
 .metric-card {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xs);
-  padding: 8px 6px;
+  background: var(--bg-surface);
+  padding: 12px 8px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  transition: border-color 0.15s ease;
+  transition: background var(--dur-fast) var(--ease-out);
+  border-right: 1px solid var(--border-light);
+  position: relative;
 }
 
-.metric-card:hover {
-  border-color: var(--border-electric);
+.metric-card:last-child { border-right: none; }
+
+.metric-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 24px;
+  height: 2px;
+  background: var(--amber-600);
+  border-radius: 1px;
+  transition: transform var(--dur-mid) var(--ease-out);
 }
+.metric-card:hover::after { transform: translateX(-50%) scaleX(1); }
+.metric-card:hover { background: var(--bg-raised); }
 
 .metric-val {
   font-family: var(--font-mono);
-  font-size: 17px;
+  font-size: 18px;
   font-weight: 700;
-  color: #ffffff;
+  color: var(--text-primary);
   line-height: 1.1;
 }
 
 .metric-label {
   font-family: var(--font-mono);
-  font-size: 9px;
-  color: var(--text-secondary);
-  margin-top: 4px;
+  font-size: 8.5px;
+  color: var(--text-muted);
+  margin-top: 3px;
   text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
+/* ============================================================
+   SECTION BLOCKS
+   ============================================================ */
 .section-block {
-  background: var(--bg-card);
-  border: 1px solid var(--border-subtle);
-  border-radius: var(--radius-xs);
-  padding: 10px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border-light);
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
   gap: 8px;
+  animation: fadeInUp var(--dur-slow) var(--ease-out) both;
 }
 
 .section-title {
@@ -142,10 +193,11 @@ body {
   justify-content: space-between;
   align-items: center;
   font-family: var(--font-mono);
-  font-size: 9.5px;
+  font-size: 9px;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  color: var(--text-secondary);
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  text-transform: uppercase;
 }
 
 .badges-row {
@@ -161,10 +213,49 @@ body {
   font-style: italic;
 }
 
-.full-width {
-  width: 100%;
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.popup-footer {
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border-top: 1px solid var(--border-light);
 }
 
-.popup-footer {
-  margin-top: 4px;
+.btn-dashboard {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--amber-600);
+  color: var(--text-on-amber);
+  border: none;
+  border-radius: var(--radius-xs);
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  cursor: pointer;
+  transition: all var(--dur-mid) var(--ease-out);
+  text-transform: uppercase;
 }
+
+.btn-dashboard:hover {
+  background: var(--amber-500);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md), var(--shadow-amber);
+}
+
+.btn-dashboard:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+/* ============================================================
+   SECTION ANIMATION DELAYS
+   ============================================================ */
+.section-block:nth-child(1) { animation-delay: 0ms; }
+.section-block:nth-child(2) { animation-delay: 60ms; }
+.section-block:nth-child(3) { animation-delay: 120ms; }
