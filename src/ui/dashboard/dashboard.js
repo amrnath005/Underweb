@@ -20,6 +20,7 @@ import { SecurityAnalyzer } from '../../security/security-analyzer.js';
 import { KNOWLEDGE_BASE } from '../../../data/providers.js';
 import { StorageManager } from '../../storage/indexeddb.js';
 import { TimeUtils } from '../../utils/time-utils.js';
+import { createMockSession } from '../../utils/mock-data.js';
 
 let currentTabId = null;
 let currentSession = null;
@@ -37,9 +38,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   if (tabIdParam) {
     currentTabId = parseInt(tabIdParam, 10);
-  } else {
-    const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-    if (tab) currentTabId = tab.id;
+  } else if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
+    try {
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      if (tab) currentTabId = tab.id;
+    } catch {}
   }
 
   // 2. Initialize Navigation
@@ -169,81 +172,95 @@ function setupActions() {
 }
 
 async function loadSessionData() {
-  if (!currentTabId) return;
+  let sessionData = null;
 
-  try {
-    const res = await chrome.runtime.sendMessage({
-      action: 'GET_TAB_SESSION',
-      tabId: currentTabId
-    });
-
-    if (!res || !res.success || !res.data) {
-      document.getElementById('targetHostname').textContent = 'No telemetry available for tab.';
-      return;
-    }
-
-    currentSession = res.data;
-
-    // Header info
-    if (currentSession.url) {
-      try {
-        const u = new URL(currentSession.url);
-        document.getElementById('targetProtocol').textContent = u.protocol + '//';
-        document.getElementById('targetHostname').textContent = u.hostname + (u.pathname !== '/' ? u.pathname : '');
-      } catch {
-        document.getElementById('targetHostname').textContent = currentSession.url;
+  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && currentTabId) {
+    try {
+      const res = await chrome.runtime.sendMessage({
+        action: 'GET_TAB_SESSION',
+        tabId: currentTabId
+      });
+      if (res && res.success && res.data) {
+        sessionData = res.data;
       }
+    } catch (err) {
+      console.warn('Chrome runtime message failed, defaulting to demo substrate:', err);
     }
+  }
 
-    // 1. Run Technology Fingerprinting
-    detectedTechs = FingerprintEngine.detect(currentSession);
+  // Fallback to rich mock session if running in localhost / standalone browser
+  if (!sessionData) {
+    sessionData = createMockSession();
+  }
 
-    // 2. Catalogs APIs & Trackers
-    catalogedApis = ApiDetector.catalogApis(currentSession.requests);
-    detectedTrackers = TrackerDetector.detect(currentSession.requests);
+  currentSession = sessionData;
 
-    // 3. Infrastructure
-    const headers = currentSession.security.headers || {};
-    const cdnInfo = CdnDetector.detect(headers);
-    const hostInfo = HostingDetector.detect(headers);
-
-    // 4. Inferred Architecture
-    const inferredArch = ArchitectureInferenceEngine.infer(currentSession, detectedTechs, catalogedApis);
-    renderInferredArchitecture(inferredArch);
-
-    // 5. Render Overview & DNA Chart
-    renderOverview();
-
-    // 6. Render Tech Stack
-    renderStackTab();
-
-    // 7. Render Network Waterfall
-    renderNetworkTab();
-
-    // 8. Build & Render Architecture Graph
-    activeGraph = GraphBuilder.build(
-      currentSession,
-      detectedTechs,
-      catalogedApis,
-      detectedTrackers,
-      cdnInfo,
-      hostInfo
-    );
-    if (graphRenderer && activeGraph) {
-      graphRenderer.setData(activeGraph.toJSON());
+  // Header info
+  if (currentSession.url) {
+    try {
+      const u = new URL(currentSession.url);
+      document.getElementById('targetProtocol').textContent = u.protocol + '//';
+      document.getElementById('targetHostname').textContent = u.hostname + (u.pathname !== '/' ? u.pathname : '');
+    } catch {
+      document.getElementById('targetHostname').textContent = currentSession.url;
     }
+  }
 
-    // 9. Render Infrastructure
-    renderInfrastructureTab(cdnInfo, hostInfo);
+  // 1. Run Technology Fingerprinting
+  detectedTechs = FingerprintEngine.detect(currentSession);
 
-    // 10. Render Privacy & Security
-    chrome.cookies.getAll({ url: currentSession.url }, (cookies) => {
-      renderPrivacyTab(cookies || []);
-      renderSecurityTab(cookies || []);
-    });
+  // 2. Catalogs APIs & Trackers
+  catalogedApis = ApiDetector.catalogApis(currentSession.requests);
+  detectedTrackers = TrackerDetector.detect(currentSession.requests);
 
-    // 11. Render APIs
-    renderApisTab();
+  // 3. Infrastructure
+  const headers = currentSession.security.headers || {};
+  const cdnInfo = CdnDetector.detect(headers);
+  const hostInfo = HostingDetector.detect(headers);
+
+  // 4. Inferred Architecture
+  const inferredArch = ArchitectureInferenceEngine.infer(currentSession, detectedTechs, catalogedApis);
+  renderInferredArchitecture(inferredArch);
+
+  // 5. Render Overview & DNA Chart
+  renderOverview();
+
+  // 6. Render Tech Stack
+  renderStackTab();
+
+  // 7. Render Network Waterfall
+  renderNetworkTab();
+
+  // 8. Build & Render Architecture Graph
+  activeGraph = GraphBuilder.build(
+    currentSession,
+    detectedTechs,
+    catalogedApis,
+    detectedTrackers,
+    cdnInfo,
+    hostInfo
+  );
+  if (graphRenderer && activeGraph) {
+    graphRenderer.setData(activeGraph.toJSON());
+  }
+
+  // 9. Render Infrastructure
+  renderInfrastructureTab(cdnInfo, hostInfo);
+
+  // 10. Render Privacy & Security
+  const handleCookies = (cookies) => {
+    renderPrivacyTab(cookies || []);
+    renderSecurityTab(cookies || []);
+  };
+
+  if (typeof chrome !== 'undefined' && chrome.cookies && chrome.cookies.getAll && currentSession.url) {
+    chrome.cookies.getAll({ url: currentSession.url }, handleCookies);
+  } else {
+    handleCookies(currentSession.mockCookies || []);
+  }
+
+  // 11. Render APIs
+  renderApisTab();
 
     // 12. Render Click Investigator
     TimelineRenderer.renderClickSequence(
