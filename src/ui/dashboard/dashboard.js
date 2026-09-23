@@ -382,7 +382,36 @@ async function loadSessionData() {
   };
 
   if (typeof chrome !== 'undefined' && chrome.cookies && chrome.cookies.getAll && currentSession.url && currentSession.url.startsWith('http')) {
-    chrome.cookies.getAll({ url: currentSession.url }, handleCookies);
+    chrome.cookies.getAll({ url: currentSession.url }, (urlCookies = []) => {
+      const cookieMap = new Map();
+      (urlCookies || []).forEach(c => cookieMap.set(`${c.domain}|${c.name}|${c.path}`, c));
+
+      // Query Apex domain cookies if available
+      if (currentSession.primaryApex) {
+        chrome.cookies.getAll({ domain: currentSession.primaryApex }, (apexCookies = []) => {
+          (apexCookies || []).forEach(c => cookieMap.set(`${c.domain}|${c.name}|${c.path}`, c));
+
+          // Query up to 4 major connected third-party domains
+          const extraDomains = (currentSession.thirdPartyDomains || []).slice(0, 4);
+          let pending = extraDomains.length;
+          if (pending === 0) {
+            handleCookies(Array.from(cookieMap.values()));
+          } else {
+            extraDomains.forEach(domain => {
+              chrome.cookies.getAll({ domain }, (thirdPartyCookies = []) => {
+                (thirdPartyCookies || []).forEach(c => cookieMap.set(`${c.domain}|${c.name}|${c.path}`, c));
+                pending--;
+                if (pending === 0) {
+                  handleCookies(Array.from(cookieMap.values()));
+                }
+              });
+            });
+          }
+        });
+      } else {
+        handleCookies(Array.from(cookieMap.values()));
+      }
+    });
   } else {
     handleCookies([]);
   }

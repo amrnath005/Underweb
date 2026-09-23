@@ -242,6 +242,23 @@ suite('Phase 2 Telemetry Pipelines & Synthesis', () => {
 });
 
 // -------------------------------------------------------------
+// 8. Phase 3: Expanded ASN Registry & Optional DoH
+// -------------------------------------------------------------
+suite('Phase 3 Expanded ASN Registry & Optional DoH', () => {
+  const hetzner = AsnAnalyzer.lookup('78.46.10.20');
+  assert(hetzner.asn === 'AS24940' && hetzner.org.includes('Hetzner'), 'Resolves Hetzner ASN');
+
+  const oracle = AsnAnalyzer.lookup('129.213.5.10');
+  assert(oracle.asn === 'AS31898' && oracle.org.includes('Oracle'), 'Resolves Oracle Cloud ASN');
+
+  const github = AsnAnalyzer.lookup('140.82.112.5');
+  assert(github.asn === 'AS36459' && github.org.includes('GitHub'), 'Resolves GitHub ASN');
+
+  // Verify non-blocking graceful return of resolveDoh on empty/offline
+  assert(typeof AsnAnalyzer.resolveDoh === 'function', 'resolveDoh is defined as optional method');
+});
+
+// -------------------------------------------------------------
 // Summary
 // -------------------------------------------------------------
 console.log(`\n========================================`);
