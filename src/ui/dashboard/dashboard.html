@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Underweb — Deep Intelligence Dashboard</title>
+  <link rel="stylesheet" href="../styles/theme.css">
+  <link rel="stylesheet" href="dashboard.css">
+</head>
+<body>
+  <div class="app-layout">
+    <!-- Top Bar -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="brand">
+          <img src="../../../assets/icons/icon32.png" alt="Underweb" width="22" height="22">
+          <span class="brand-title">UNDERWEB</span>
+          <span class="badge badge-cyan">INTELLIGENCE</span>
+        </div>
+        <div class="target-site-indicator">
+          <span id="targetProtocol" class="text-muted">https://</span>
+          <span id="targetHostname" class="target-host">Connecting to target tab...</span>
+          <span id="targetStatusBadge" class="badge badge-emerald">ACTIVE</span>
+        </div>
+      </div>
+      <div class="topbar-right">
+        <button id="refreshBtn" class="btn btn-sm" title="Refresh session telemetry">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10"></polyline>
+            <polyline points="1 20 1 14 7 14"></polyline>
+            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+          </svg>
+          Refresh
+        </button>
+        <button id="exportDropdownBtn" class="btn btn-cyan btn-sm">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Report
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <div class="workspace">
+      <!-- Navigation Sidebar -->
+      <nav class="sidebar">
+        <div class="nav-section-title">EXPLORER</div>
+        <button class="nav-item active" data-tab="tab-overview">
+          <span class="nav-icon">📊</span> Overview
+        </button>
+        <button class="nav-item" data-tab="tab-stack">
+          <span class="nav-icon">⚡</span> Technology Stack
+        </button>
+        <button class="nav-item" data-tab="tab-network">
+          <span class="nav-icon">🌐</span> Network Intelligence
+        </button>
+        <button class="nav-item" data-tab="tab-architecture">
+          <span class="nav-icon">🕸️</span> Architecture Graph
+        </button>
+        <button class="nav-item" data-tab="tab-infrastructure">
+          <span class="nav-icon">☁️</span> Infrastructure & CDN
+        </button>
+        <button class="nav-item" data-tab="tab-privacy">
+          <span class="nav-icon">🛡️</span> Privacy & Storage
+        </button>
+        <button class="nav-item" data-tab="tab-security">
+          <span class="nav-icon">🔒</span> Security Posture
+        </button>
+        <button class="nav-item" data-tab="tab-apis">
+          <span class="nav-icon">🔌</span> API Explorer
+        </button>
+
+        <div class="nav-section-title">INVESTIGATION</div>
+        <button class="nav-item" data-tab="tab-investigator">
+          <span class="nav-icon">🖱️</span> Click Investigator
+        </button>
+        <button class="nav-item" data-tab="tab-learn">
+          <span class="nav-icon">🎓</span> Student Learning Mode
+        </button>
+        <button class="nav-item" data-tab="tab-compare">
+          <span class="nav-icon">⚖️</span> Compare Sites
+        </button>
+        <button class="nav-item" data-tab="tab-history">
+          <span class="nav-icon">💾</span> History & Export
+        </button>
+      </nav>
+
+      <!-- Panel Content Area -->
+      <main class="content-viewport">
+
+        <!-- 1. OVERVIEW TAB -->
+        <section id="tab-overview" class="tab-panel active">
+          <div class="panel-header">
+            <h2>Website Intelligence Overview</h2>
+            <p class="panel-desc">Multi-signal technical profile synthesized from browser internals, network telemetry, and runtime inspection.</p>
+          </div>
+
+          <!-- Hero Grid -->
+          <div class="hero-grid">
+            <!-- DNA Radar Card -->
+            <div class="card dna-card">
+              <div class="card-header">
+                <span class="card-title">🧬 Website DNA Complexity Profile</span>
+                <span class="badge badge-cyan" id="dnaScoreBadge">BALANCED</span>
+              </div>
+              <div class="dna-canvas-wrap">
+                <canvas id="dnaCanvas" width="340" height="260"></canvas>
+              </div>
+            </div>
+
+            <!-- Inferred Architecture Card -->
+            <div class="card arch-card">
+              <div class="card-header">
+                <span class="card-title">🏛️ Inferred System Architecture</span>
+                <span class="badge badge-emerald" id="archConfidenceBadge">HIGH CONFIDENCE</span>
+              </div>
+              <div class="arch-body">
+                <div class="arch-name" id="inferredArchName">Server-Side Rendered (SSR) Hydrated App</div>
+                <p class="arch-expl" id="inferredArchExpl">Hydrated client JavaScript takes over an initial server-rendered HTML document, orchestrating API data flow.</p>
+                <div class="arch-signals-box">
+                  <div class="signals-title">Observable Supporting Signals:</div>
+                  <ul id="archSignalsList" class="signals-list">
+                    <li>Initial document markup contains pre-rendered DOM</li>
+                    <li>Hydration payload detected in window script tag</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quick Metrics Tiles -->
+          <div class="metrics-row">
+            <div class="card metric-tile">
+              <div class="tile-icon">🌐</div>
+              <div class="tile-data">
+                <span class="tile-val" id="ovTotalReqs">0</span>
+                <span class="tile-label">Network Requests</span>
+              </div>
+            </div>
+            <div class="card metric-tile">
+              <div class="tile-icon">🏢</div>
+              <div class="tile-data">
+                <span class="tile-val" id="ovDomains">0</span>
+                <span class="tile-label">Connected Domains</span>
+              </div>
+            </div>
+            <div class="card metric-tile">
+              <div class="tile-icon">📡</div>
+              <div class="tile-data">
+                <span class="tile-val" id="ovThirdParty">0</span>
+                <span class="tile-label">Third Parties</span>
+              </div>
+            </div>
+            <div class="card metric-tile">
+              <div class="tile-icon">⚡</div>
+              <div class="tile-data">
+                <span class="tile-val" id="ovTechs">0</span>
+                <span class="tile-label">Detected Techs</span>
+              </div>
+            </div>
+            <div class="card metric-tile">
+              <div class="tile-icon">🔒</div>
+              <div class="tile-data">
+                <span class="tile-val" id="ovSecurityGrade">A</span>
+                <span class="tile-label">Security Grade</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. STACK TAB -->
+        <section id="tab-stack" class="tab-panel">
+          <div class="panel-header">
+            <h2>Detected Technology Stack</h2>
+            <p class="panel-desc">Evidence-backed detection of frameworks, libraries, build tools, CMS, analytics, and cloud providers.</p>
+          </div>
+          <div id="techStackGrid" class="stack-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- 3. NETWORK TAB -->
+        <section id="tab-network" class="tab-panel">
+          <div class="panel-header">
+            <h2>Network Intelligence & Waterfall</h2>
+            <div class="network-filters">
+              <input type="text" id="networkSearchInput" class="input-search" placeholder="Search URL or domain...">
+              <select id="networkCategoryFilter" class="select-filter">
+                <option value="ALL">All Categories</option>
+                <option value="API">API & JSON</option>
+                <option value="SCRIPT">Scripts</option>
+                <option value="STYLESHEET">Stylesheets</option>
+                <option value="IMAGE">Images</option>
+                <option value="TRACKER">Trackers</option>
+                <option value="ANALYTICS">Analytics</option>
+                <option value="WEBSOCKET">WebSockets</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- First Contact Card -->
+          <div class="card first-contact-card">
+            <div class="card-header">
+              <span class="card-title">⏱️ "First Contact" Sequence</span>
+              <span class="badge badge-slate">Initial Boot Handshake</span>
+            </div>
+            <div id="firstContactList" class="first-contact-row">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+
+          <!-- Network Waterfall Container -->
+          <div class="card waterfall-card">
+            <div id="waterfallContainer" class="waterfall-container"></div>
+          </div>
+        </section>
+
+        <!-- 4. ARCHITECTURE GRAPH TAB -->
+        <section id="tab-architecture" class="tab-panel">
+          <div class="panel-header">
+            <h2>Interactive Architecture Graph</h2>
+            <div class="graph-actions">
+              <button id="btnRunDijkstra" class="btn btn-sm btn-cyan">Shortest Path to Tracker</button>
+              <button id="btnRunCentrality" class="btn btn-sm">Betweenness Centrality</button>
+              <button id="btnResetGraph" class="btn btn-sm">Reset View</button>
+            </div>
+          </div>
+
+          <div class="graph-viewport-wrap">
+            <canvas id="architectureCanvas" class="architecture-canvas" width="900" height="520"></canvas>
+            <!-- Inspector Drawer -->
+            <div id="nodeInspectorDrawer" class="node-inspector-drawer">
+              <div class="drawer-header">
+                <span id="drawerNodeTitle" class="drawer-title">Node Inspector</span>
+                <button id="closeDrawerBtn" class="btn-close">&times;</button>
+              </div>
+              <div id="drawerBody" class="drawer-body">
+                <p class="text-muted">Select any node on the graph to inspect relationships, evidence, and degree metrics.</p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5. INFRASTRUCTURE TAB -->
+        <section id="tab-infrastructure" class="tab-panel">
+          <div class="panel-header">
+            <h2>Infrastructure & Cloud Topology</h2>
+            <p class="panel-desc">End-to-end client-to-origin resolution pipeline mapping DNS, IP, ASN, CDN, and Origin Host.</p>
+          </div>
+          <div id="infraPipelineContainer" class="infra-pipeline">
+            <!-- Pipeline steps dynamically populated -->
+          </div>
+        </section>
+
+        <!-- 6. PRIVACY TAB -->
+        <section id="tab-privacy" class="tab-panel">
+          <div class="panel-header">
+            <h2>Privacy & Client Storage Audit</h2>
+            <p class="panel-desc">Analysis of browser tracking, persistent storage, cookies, and hardware API surveillance.</p>
+          </div>
+          <div class="privacy-grid">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">🍪 Cookie Security & Hygiene</span>
+                <span id="cookieSummaryBadge" class="badge badge-slate">0 Total</span>
+              </div>
+              <div id="cookieIssuesContainer" class="privacy-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">💾 Client-Side Storage</span>
+              </div>
+              <div id="storageSummaryContainer" class="privacy-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">📡 Hardware & Permission Surface</span>
+              </div>
+              <div id="permissionsContainer" class="privacy-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">🕵️ Identified Trackers</span>
+              </div>
+              <div id="trackersContainer" class="privacy-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7. SECURITY TAB -->
+        <section id="tab-security" class="tab-panel">
+          <div class="panel-header">
+            <h2>Security Posture & Vulnerability Heuristics</h2>
+            <p class="panel-desc">Inspection of CSP defense-in-depth, HSTS, CORS wildcard risks, and mixed content.</p>
+          </div>
+          <div class="security-layout">
+            <div class="security-score-banner">
+              <div class="score-circle" id="securityScoreCircle">A</div>
+              <div class="score-info">
+                <h3 id="securityScoreText">Security Posture: Excellent</h3>
+                <p id="securityScoreSubtext">All critical transport encryption and origin isolation mechanisms are active.</p>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">🛡️ Security Header Audit Findings</span>
+              </div>
+              <div id="securityFindingsList" class="findings-list"></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8. APIS TAB -->
+        <section id="tab-apis" class="tab-panel">
+          <div class="panel-header">
+            <h2>API & Protocol Explorer</h2>
+            <p class="panel-desc">Catalog of REST endpoints, GraphQL operations, and WebSockets observed during interaction.</p>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">🔌 Observed API Transactions</span>
+              <span id="apiCountBadge" class="badge badge-emerald">0 Endpoints</span>
+            </div>
+            <div id="apiListContainer" class="api-list"></div>
+          </div>
+        </section>
+
+        <!-- 9. INVESTIGATOR TAB ("What Happens When I Click?") -->
+        <section id="tab-investigator" class="tab-panel">
+          <div class="panel-header">
+            <h2>"What Happens When I Click?" (Interaction Investigator)</h2>
+            <div class="investigator-controls">
+              <button id="toggleInvestigatorBtn" class="btn btn-primary">
+                ▶ Start Investigation Mode
+              </button>
+              <button id="clearInvestigatorBtn" class="btn btn-sm">Clear Log</button>
+            </div>
+          </div>
+          <div class="card">
+            <div id="clickTimelineContainer" class="click-timeline-container">
+              <!-- Dynamically populated -->
+            </div>
+          </div>
+        </section>
+
+        <!-- 10. LEARN TAB (Student Learning Mode) -->
+        <section id="tab-learn" class="tab-panel">
+          <div class="panel-header">
+            <h2>Student Learning Mode & Architecture Wiki</h2>
+            <input type="text" id="learnSearchInput" class="input-search" placeholder="Search concepts (e.g. Next.js, HTTP/2, CSP, Redis)...">
+          </div>
+          <div id="learnGrid" class="learn-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </section>
+
+        <!-- 11. COMPARE TAB -->
+        <section id="tab-compare" class="tab-panel">
+          <div class="panel-header">
+            <h2>Website Comparison Engine</h2>
+            <p class="panel-desc">Compare the technology stack, network footprint, and security posture of two websites side-by-side.</p>
+          </div>
+          <div id="compareContainer" class="compare-container">
+            <div class="compare-row">
+              <div class="compare-site-col" id="compareSiteA">
+                <h3>Website A (Active)</h3>
+                <div class="compare-metrics" id="siteAMetrics">Loading...</div>
+              </div>
+              <div class="compare-vs">VS</div>
+              <div class="compare-site-col" id="compareSiteB">
+                <h3>Website B (Historical)</h3>
+                <select id="compareSelectB" class="select-filter full-width">
+                  <option value="">Select a previously inspected site...</option>
+                </select>
+                <div class="compare-metrics" id="siteBMetrics">Select a website to compare.</div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 12. HISTORY & EXPORT TAB -->
+        <section id="tab-history" class="tab-panel">
+          <div class="panel-header">
+            <h2>Inspection History & Local Storage</h2>
+            <div class="export-btn-group">
+              <button id="exportJsonBtn" class="btn btn-sm">Download JSON</button>
+              <button id="exportMdBtn" class="btn btn-sm">Download Markdown</button>
+              <button id="exportCsvBtn" class="btn btn-sm">Download Network CSV</button>
+            </div>
+          </div>
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">💾 Saved Website Snapshots</span>
+            </div>
+            <div id="historyTableContainer" class="history-table-wrap"></div>
+          </div>
+        </section>
+
+      </main>
+    </div>
+
+    <!-- Evidence Inspector Modal -->
+    <div id="evidenceModal" class="modal-overlay">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modalTechTitle">Technology Evidence</h3>
+          <button id="closeModalBtn" class="btn-close">&times;</button>
+        </div>
+        <div id="modalBody" class="modal-body"></div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="dashboard.js"></script>
+</body>
+</html>
