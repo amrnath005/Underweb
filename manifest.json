@@ -1,0 +1,56 @@
+{
+  "manifest_version": 3,
+  "name": "Underweb — Website Intelligence & Architecture Explorer",
+  "version": "1.0.0",
+  "description": "Explore the technology beneath every website. Advanced website intelligence, network inspector, architecture graph, and student learning tool.",
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "32": "assets/icons/icon32.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "permissions": [
+    "webRequest",
+    "cookies",
+    "storage",
+    "scripting",
+    "tabs",
+    "activeTab"
+  ],
+  "optional_permissions": [
+    "debugger"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "src/background/service-worker.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/content/content.js"],
+      "run_at": "document_start"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/content/page-analyzer.js",
+        "assets/*"
+      ],
+      "matches": ["<all_urls>"]
+    }
+  ],
+  "action": {
+    "default_popup": "src/ui/popup/popup.html",
+    "default_title": "Underweb — Website Intelligence",
+    "default_icon": {
+      "16": "assets/icons/icon16.png",
+      "32": "assets/icons/icon32.png",
+      "48": "assets/icons/icon48.png",
+      "128": "assets/icons/icon128.png"
+    }
+  }
+}
