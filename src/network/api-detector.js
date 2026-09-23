@@ -25,15 +25,17 @@ export class ApiDetector {
   }
 
   /**
-   * Catalog an array of requests into organized API endpoint records.
+   * Catalog an array of requests and runtime-intercepted calls into organized API endpoint records.
    * @param {Array<object>} requests
+   * @param {Array<object>} [runtimeApis]
    * @returns {Array<object>} Cataloged API endpoints
    */
-  static catalogApis(requests) {
+  static catalogApis(requests = [], runtimeApis = []) {
     const apis = [];
     const seen = new Set();
 
-    for (const req of requests) {
+    // 1. Process network requests from chrome.webRequest
+    for (const req of (requests || [])) {
       if (!this.isApiRequest(req)) continue;
 
       const parsed = UrlUtils.safeParse(req.url);
@@ -44,7 +46,6 @@ export class ApiDetector {
       const key = `${method} ${parsed.hostname}${endpointPath}`;
 
       if (seen.has(key)) {
-        // Find existing and increment count
         const existing = apis.find(a => a.key === key);
         if (existing) {
           existing.callCount++;
@@ -74,6 +75,48 @@ export class ApiDetector {
         callCount: 1,
         queryParams: UrlUtils.getQueryParams(req.url),
         lastSeen: req.startTime || Date.now()
+      });
+    }
+
+    // 2. Process runtime intercepted APIs (from fetch/XHR hook in page-analyzer)
+    for (const rApi of (runtimeApis || [])) {
+      if (!rApi || !rApi.url) continue;
+
+      const parsed = UrlUtils.safeParse(rApi.url);
+      if (!parsed) continue;
+
+      const method = (rApi.method || 'GET').toUpperCase();
+      const endpointPath = parsed.pathname;
+      const key = `${method} ${parsed.hostname}${endpointPath}`;
+
+      if (seen.has(key)) {
+        const existing = apis.find(a => a.key === key);
+        if (existing) {
+          existing.callCount++;
+          if (rApi.duration) existing.durations.push(rApi.duration);
+          if (rApi.operationName && !existing.operationName) existing.operationName = rApi.operationName;
+        }
+        continue;
+      }
+
+      seen.add(key);
+      const isGraphQL = rApi.isGraphQL || endpointPath.includes('graphql') || endpointPath.includes('gql');
+      let apiType = isGraphQL ? 'GraphQL' : 'REST';
+
+      apis.push({
+        key,
+        host: parsed.hostname,
+        path: endpointPath,
+        method,
+        apiType,
+        operationName: rApi.operationName || null,
+        isFirstParty: true,
+        status: rApi.status || 200,
+        duration: rApi.duration || 0,
+        durations: rApi.duration ? [rApi.duration] : [],
+        callCount: 1,
+        queryParams: UrlUtils.getQueryParams(rApi.url),
+        lastSeen: rApi.timestamp || Date.now()
       });
     }
 

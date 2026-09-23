@@ -23,6 +23,8 @@
     frameworks: [],
     libraries: [],
     apis: [],
+    websockets: [],
+    performance: {},
     storage: {
       localStorageCount: 0,
       localStorageKeys: [],
@@ -55,6 +57,20 @@
       if (!runtimeState.apis.some(a => a.url === data.url && a.timestamp === data.timestamp)) {
         runtimeState.apis.push(data);
         if (runtimeState.apis.length > 50) runtimeState.apis.shift();
+      }
+      dispatchTelemetry();
+    } else if (type === 'WEBSOCKET_OPEN' || type === 'WEBSOCKET_CLOSE') {
+      const existing = runtimeState.websockets.find(ws => ws.url === data.url);
+      if (existing) {
+        existing.status = type === 'WEBSOCKET_OPEN' ? 'OPEN' : 'CLOSED';
+        existing.timestamp = data.timestamp;
+      } else {
+        runtimeState.websockets.push({
+          url: data.url,
+          status: type === 'WEBSOCKET_OPEN' ? 'OPEN' : 'CLOSED',
+          timestamp: data.timestamp
+        });
+        if (runtimeState.websockets.length > 30) runtimeState.websockets.shift();
       }
       dispatchTelemetry();
     }
@@ -147,7 +163,33 @@
     }
   }
 
-  // 5. Send aggregated telemetry to Background Service Worker
+  // 5. Audit Real PerformanceNavigationTiming
+  function analyzePerformance() {
+    try {
+      if (typeof window !== 'undefined' && window.performance && window.performance.getEntriesByType) {
+        const navEntries = window.performance.getEntriesByType('navigation');
+        if (navEntries && navEntries.length > 0) {
+          const nav = navEntries[0];
+          runtimeState.performance = {
+            protocol: nav.nextHopProtocol || '',
+            ttfb: Math.max(0, Math.round(nav.responseStart - nav.requestStart)),
+            dns: Math.max(0, Math.round(nav.domainLookupEnd - nav.domainLookupStart)),
+            tcp: Math.max(0, Math.round(nav.connectEnd - nav.connectStart)),
+            tls: nav.secureConnectionStart > 0 ? Math.max(0, Math.round(nav.connectEnd - nav.secureConnectionStart)) : 0,
+            download: Math.max(0, Math.round(nav.responseEnd - nav.responseStart)),
+            domContentLoaded: Math.max(0, Math.round(nav.domContentLoadedEventEnd - nav.startTime)),
+            domInteractive: Math.max(0, Math.round(nav.domInteractive - nav.startTime)),
+            loadComplete: Math.max(0, Math.round(nav.loadEventEnd - nav.startTime)),
+            transferSize: nav.transferSize || 0,
+            encodedBodySize: nav.encodedBodySize || 0,
+            decodedBodySize: nav.decodedBodySize || 0
+          };
+        }
+      }
+    } catch {}
+  }
+
+  // 6. Send aggregated telemetry to Background Service Worker
   let debounceTimeout = null;
   function dispatchTelemetry() {
     if (debounceTimeout) clearTimeout(debounceTimeout);
@@ -160,7 +202,7 @@
     }, 200);
   }
 
-  // 6. Interactive Click Recorder ("What Happens When I Click")
+  // 7. Interactive Click Recorder ("What Happens When I Click")
   let isRecordingClick = false;
   chrome.runtime.onMessage.addListener((message) => {
     if (message.action === 'SET_CLICK_RECORDING') {
@@ -194,18 +236,28 @@
   injectPageAnalyzer();
   analyzeDom();
   analyzeStorage();
+  analyzePerformance();
   auditPermissions().then(() => dispatchTelemetry());
 
-  // Re-run DOM inspection once DOM is completely ready
+  // Re-run DOM & performance inspection once DOM and window are completely ready
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
       analyzeDom();
       analyzeStorage();
+      analyzePerformance();
       dispatchTelemetry();
     });
   } else {
     analyzeDom();
     analyzeStorage();
+    analyzePerformance();
     dispatchTelemetry();
   }
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      analyzePerformance();
+      dispatchTelemetry();
+    }, 300);
+  });
 })();

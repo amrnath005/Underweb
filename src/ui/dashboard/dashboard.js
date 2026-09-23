@@ -335,8 +335,11 @@ async function loadSessionData() {
   detectedTechs = FingerprintEngine.detect(currentSession);
 
   // 2. Catalogs APIs & Trackers
-  catalogedApis = ApiDetector.catalogApis(currentSession.requests);
-  detectedTrackers = TrackerDetector.detect(currentSession.requests);
+  catalogedApis = ApiDetector.catalogApis(
+    currentSession.requests || [],
+    currentSession.runtime ? currentSession.runtime.apis : []
+  );
+  detectedTrackers = TrackerDetector.detect(currentSession.requests || []);
 
   // 3. Infrastructure
   const headers = currentSession.security.headers || {};

@@ -58,6 +58,13 @@ export class MessageRouter {
         if (message.payload.frameworks) session.runtime.frameworks = message.payload.frameworks;
         if (message.payload.libraries) session.runtime.libraries = message.payload.libraries;
         if (message.payload.apis) session.runtime.apis = message.payload.apis;
+        if (message.payload.websockets) {
+          session.runtime.websockets = message.payload.websockets;
+          session.stats.websocketCount = message.payload.websockets.length;
+        }
+        if (message.payload.performance) {
+          session.runtime.performance = message.payload.performance;
+        }
         if (message.payload.storage) session.runtime.storage = message.payload.storage;
         if (message.payload.permissions) session.runtime.permissions = message.payload.permissions;
         if (message.payload.domMetrics) session.runtime.domMetrics = message.payload.domMetrics;

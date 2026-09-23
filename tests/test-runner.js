@@ -17,6 +17,8 @@ import { IpAnalyzer } from '../src/infrastructure/ip-analyzer.js';
 import { AsnAnalyzer } from '../src/infrastructure/asn-analyzer.js';
 import { TabSession, SessionManager } from '../src/background/session-manager.js';
 import { createMockSession } from '../src/utils/mock-data.js';
+import { ApiDetector } from '../src/network/api-detector.js';
+import { WebSocketAnalyzer } from '../src/network/websocket-analyzer.js';
 
 let passed = 0;
 let failed = 0;
@@ -186,6 +188,57 @@ suite('TabSession & SessionManager Lifecycle', () => {
   // Mock data fixture isolation test
   const fixture = createMockSession();
   assert(fixture && fixture.primaryDomain.length > 0, 'Mock session remains available as test fixture');
+});
+
+// -------------------------------------------------------------
+// 7. Phase 2: Telemetry Pipelines (WebSockets, APIs, Classification)
+// -------------------------------------------------------------
+suite('Phase 2 Telemetry Pipelines & Synthesis', () => {
+  const s = new TabSession(88, 'https://myapp.com');
+
+  // Test 1: Automatic classification and categorical increment
+  s.recordRequest({
+    requestId: 'r_api',
+    url: 'https://myapp.com/api/v2/users',
+    type: 'fetch',
+    size: 512
+  });
+  s.recordRequest({
+    requestId: 'r_script',
+    url: 'https://myapp.com/static/bundle.js',
+    type: 'script',
+    size: 1024
+  });
+  s.recordRequest({
+    requestId: 'r_track',
+    url: 'https://www.google-analytics.com/g/collect',
+    type: 'other'
+  });
+
+  assert(s.stats.apiCount === 1, 'Auto-increments stats.apiCount from classification');
+  assert(s.stats.scriptCount === 1, 'Auto-increments stats.scriptCount from classification');
+  assert(s.stats.trackerCount === 1, 'Auto-increments stats.trackerCount from classification');
+
+  // Test 2: ApiDetector merges webRequest + runtime intercepted APIs
+  const networkRequests = [
+    { url: 'https://myapp.com/api/v1/orders', method: 'GET', type: 'fetch', isFirstParty: true, status: 200 }
+  ];
+  const runtimeApis = [
+    { url: 'https://myapp.com/graphql', method: 'POST', isGraphQL: true, operationName: 'GetInventory', status: 200 }
+  ];
+  const cataloged = ApiDetector.catalogApis(networkRequests, runtimeApis);
+  assert(cataloged.length === 2, 'ApiDetector synthesizes both network and runtime intercepted APIs');
+  assert(cataloged.some(a => a.apiType === 'GraphQL' && a.operationName === 'GetInventory'), 'Catalogs runtime GraphQL queries with operation name');
+  assert(cataloged.some(a => a.path === '/api/v1/orders'), 'Catalogs standard REST endpoint');
+
+  // Test 3: WebSocket connection profiling
+  const rawSockets = [
+    { url: 'wss://realtime.myapp.com/socket.io/?EIO=4&transport=websocket', status: 'OPEN' }
+  ];
+  const sockets = WebSocketAnalyzer.analyze(rawSockets);
+  assert(sockets.length === 1, 'WebSocketAnalyzer profiles socket connection');
+  assert(sockets[0].isSecure === true, 'Detects secure wss:// protocol');
+  assert(sockets[0].subProtocol === 'Socket.io', 'Identifies Socket.io sub-protocol');
 });
 
 // -------------------------------------------------------------

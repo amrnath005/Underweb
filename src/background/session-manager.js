@@ -3,6 +3,7 @@
 
 import { DomainUtils } from '../utils/domain-utils.js';
 import { UrlUtils } from '../utils/url-utils.js';
+import { ResourceClassifier } from '../network/resource-classifier.js';
 import { Logger } from '../utils/logger.js';
 
 const logger = new Logger('SessionManager');
@@ -53,6 +54,8 @@ export class TabSession {
       frameworks: [],
       libraries: [],
       apis: [],
+      websockets: [],
+      performance: {},
       storage: {
         localStorageCount: 0,
         localStorageKeys: [],
@@ -106,8 +109,17 @@ export class TabSession {
         requestHeaders: {},
         responseHeaders: {},
         isFirstParty: true,
-        category: 'UNKNOWN'
+        category: reqData.category || ResourceClassifier.classify(reqData)
       };
+
+      // Categorical counts
+      if (req.category === 'API') this.stats.apiCount++;
+      else if (req.category === 'SCRIPT') this.stats.scriptCount++;
+      else if (req.category === 'STYLESHEET') this.stats.stylesheetCount++;
+      else if (req.category === 'IMAGE') this.stats.imageCount++;
+      else if (req.category === 'FONT') this.stats.fontCount++;
+      else if (req.category === 'TRACKER' || req.category === 'ANALYTICS' || req.category === 'AD') this.stats.trackerCount++;
+      else if (req.category === 'WEBSOCKET') this.stats.websocketCount++;
 
       // Extract domain info
       const host = UrlUtils.getHostname(req.url);
