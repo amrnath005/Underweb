@@ -5,7 +5,6 @@
   <title>Underweb — Architecture Exoskeleton</title>
   <link rel="stylesheet" href="../styles/theme.css">
   <link rel="stylesheet" href="popup.css">
-  <!-- Immediate theme restore — no flash -->
   <script>
     (function() {
       var t = localStorage.getItem('uw-theme') || 'light';
@@ -16,39 +15,43 @@
 <body>
   <div class="popup-container">
 
-    <!-- ══════════════════════════════════════
-         HEADER
-    ══════════════════════════════════════ -->
+    <!-- HEADER -->
     <header class="popup-header">
       <div class="brand">
-        <div class="brand-icon">
-          <img src="../../../assets/branding/scorpion.svg" alt="Underweb Scorpion" width="26" height="26">
-        </div>
+        <img src="../../../assets/branding/scorpion.svg" alt="Underweb" width="20" height="20">
         <div class="brand-text">
           <span class="brand-name">UNDERWEB</span>
           <span class="brand-tagline">Architecture Exoskeleton</span>
         </div>
       </div>
       <div class="header-right">
-        <button id="themeToggleBtn" class="btn-theme" title="Toggle light / dark">🌙</button>
+        <button id="themeToggleBtn" class="btn-theme" title="Toggle theme">
+          <svg id="popupThemeIcon" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
         <div id="protocolBadge" class="badge badge-amber">TLS 1.3</div>
       </div>
     </header>
 
-    <!-- ══════════════════════════════════════
-         SITE BAR
-    ══════════════════════════════════════ -->
+    <!-- SITE BAR -->
     <div class="site-bar">
       <div class="site-host-wrap">
         <span id="siteProtocol" class="site-protocol">https://</span>
         <span id="siteHostname" class="site-host">Scanning substrate...</span>
       </div>
-      <span id="securityBadge" class="badge badge-venom">Secure</span>
+      <span id="securityBadge" class="badge badge-green">Secure</span>
     </div>
 
-    <!-- ══════════════════════════════════════
-         METRICS GRID
-    ══════════════════════════════════════ -->
+    <!-- METRICS GRID -->
     <div class="metrics-grid">
       <div class="metric-card">
         <span class="metric-val" id="totalRequests">0</span>
@@ -68,37 +71,31 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
-         DETECTED STACK
-    ══════════════════════════════════════ -->
+    <!-- STACK -->
     <div class="section-block">
       <div class="section-title">
-        <span>01 · Detected Substrate</span>
+        <span>Detected Stack</span>
         <span id="techCountBadge" class="badge badge-neutral">0 Techs</span>
       </div>
       <div id="techBadgesContainer" class="badges-row">
-        <span class="empty-state-text">Probing runtime globals & DOM markers...</span>
+        <span class="empty-state-text">Probing runtime signatures...</span>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
-         INFRASTRUCTURE
-    ══════════════════════════════════════ -->
+    <!-- INFRASTRUCTURE -->
     <div class="section-block">
       <div class="section-title">
-        <span>02 · Infrastructure & Edge</span>
+        <span>Infrastructure & Edge</span>
       </div>
       <div id="infraBadgesContainer" class="badges-row">
         <span class="empty-state-text">Tracing CDN edge & origin host...</span>
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
-         CLIENT FOOTPRINT
-    ══════════════════════════════════════ -->
+    <!-- CLIENT STORAGE -->
     <div class="section-block">
       <div class="section-title">
-        <span>03 · Client Footprint</span>
+        <span>Client Footprint</span>
       </div>
       <div id="storageBadgesContainer" class="badges-row">
         <span class="badge badge-neutral" id="cookieMetric">0 Cookies</span>
@@ -106,39 +103,41 @@
       </div>
     </div>
 
-    <!-- ══════════════════════════════════════
-         FOOTER ACTION
-    ══════════════════════════════════════ -->
+    <!-- FOOTER -->
     <footer class="popup-footer">
       <button id="openDashboardBtn" class="btn-dashboard">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
-          <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
-          <line x1="3" y1="9" x2="21" y2="9"></line>
-          <line x1="9" y1="21" x2="9" y2="9"></line>
-        </svg>
-        Open Deep Intelligence Dashboard
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-          <path d="M5 12h14M12 5l7 7-7 7"/>
+        <span>Open Deep Dashboard</span>
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+          <polyline points="12 5 19 12 12 19"></polyline>
         </svg>
       </button>
     </footer>
   </div>
 
-  <!-- Theme toggle logic -->
   <script>
+    function updatePopupThemeIcon(theme) {
+      var icon = document.getElementById('popupThemeIcon');
+      if (!icon) return;
+      if (theme === 'dark') {
+        icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+      } else {
+        icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+      }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
       var btn = document.getElementById('themeToggleBtn');
       var html = document.documentElement;
-      // Sync icon to current theme
       var current = html.getAttribute('data-theme') || 'light';
-      btn.textContent = current === 'dark' ? '☀️' : '🌙';
+      updatePopupThemeIcon(current);
 
       btn.addEventListener('click', function() {
         var curr = html.getAttribute('data-theme') || 'light';
         var next = curr === 'light' ? 'dark' : 'light';
         html.setAttribute('data-theme', next);
         localStorage.setItem('uw-theme', next);
-        btn.textContent = next === 'dark' ? '☀️' : '🌙';
+        updatePopupThemeIcon(next);
       });
     });
   </script>

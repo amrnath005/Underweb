@@ -246,13 +246,13 @@ export class GraphRenderer {
       ctx.lineTo(t.x, t.y);
 
       if (isPathHighlighted) {
-        ctx.strokeStyle = isDark ? '#D4A017' : '#C8860A';
-        ctx.lineWidth = 3;
+        ctx.strokeStyle = isDark ? '#F59E0B' : '#B45309';
+        ctx.lineWidth = 2.5;
       } else if (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)) {
-        ctx.strokeStyle = isDark ? '#8DB600' : '#6E9B00';
-        ctx.lineWidth = 2;
+        ctx.strokeStyle = isDark ? '#34D399' : '#059669';
+        ctx.lineWidth = 1.8;
       } else {
-        ctx.strokeStyle = isDark ? 'rgba(58, 48, 32, 0.8)' : 'rgba(206, 198, 180, 0.8)';
+        ctx.strokeStyle = isDark ? '#27272A' : '#E4E4E7';
         ctx.lineWidth = 1;
       }
       ctx.stroke();
@@ -261,12 +261,14 @@ export class GraphRenderer {
       if (this.transform.scale > 0.85 && (isPathHighlighted || (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)))) {
         const mx = (s.x + t.x) / 2;
         const my = (s.y + t.y) / 2;
-        ctx.fillStyle = isDark ? '#1A1610' : '#F3EFE6';
-        ctx.font = '9px "Space Mono", monospace';
-        const labelText = `[ ${link.relation || ''} ]`;
+        ctx.fillStyle = isDark ? '#18181B' : '#FFFFFF';
+        ctx.font = '500 9px "JetBrains Mono", monospace';
+        const labelText = link.relation || '';
         const tw = ctx.measureText(labelText).width;
-        ctx.fillRect(mx - tw / 2 - 3, my - 7, tw + 6, 14);
-        ctx.fillStyle = isPathHighlighted ? (isDark ? '#D4A017' : '#C8860A') : (isDark ? '#8DB600' : '#6E9B00');
+        ctx.fillRect(mx - tw / 2 - 4, my - 7, tw + 8, 14);
+        ctx.strokeStyle = isDark ? '#3F3F46' : '#E4E4E7';
+        ctx.strokeRect(mx - tw / 2 - 4, my - 7, tw + 8, 14);
+        ctx.fillStyle = isPathHighlighted ? (isDark ? '#F59E0B' : '#B45309') : (isDark ? '#A1A1AA' : '#52525B');
         ctx.fillText(labelText, mx - tw / 2, my + 3);
       }
     }
@@ -284,37 +286,37 @@ export class GraphRenderer {
       ctx.beginPath();
       ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
 
-      // Scorpion Amber Palette for node types
-      let fillColor = isDark ? '#231E16' : '#EDE8DE';
-      if (node.type === 'WEBSITE')             fillColor = isDark ? '#C8860A' : '#D4960E';
-      else if (node.type === 'FRAMEWORK')      fillColor = isDark ? '#8B5A00' : '#B87213';
-      else if (node.type === 'LIBRARY')        fillColor = isDark ? '#6B4200' : '#A0620C';
-      else if (node.type === 'API')            fillColor = isDark ? '#5A8000' : '#6E9B00';
-      else if (node.type === 'CDN')            fillColor = isDark ? '#4A5A00' : '#7A8800';
-      else if (node.type === 'HOST')           fillColor = isDark ? '#3A3020' : '#CEC6B4';
-      else if (node.type === 'TRACKER')        fillColor = isDark ? '#D93B55' : '#E05070';
-      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = isDark ? '#A06B00' : '#C8860A';
-      else if (node.type === 'THIRD_PARTY_DOMAIN') fillColor = isDark ? '#2A2418' : '#E6E0D4';
+      // Clean Modern Palette
+      let fillColor = isDark ? '#27272A' : '#F4F4F5';
+      if (node.type === 'WEBSITE')             fillColor = isDark ? '#FAFAFA' : '#09090B';
+      else if (node.type === 'FRAMEWORK')      fillColor = isDark ? '#3B82F6' : '#2563EB';
+      else if (node.type === 'LIBRARY')        fillColor = isDark ? '#60A5FA' : '#3B82F6';
+      else if (node.type === 'API')            fillColor = isDark ? '#34D399' : '#059669';
+      else if (node.type === 'CDN')            fillColor = isDark ? '#A78BFA' : '#7C3AED';
+      else if (node.type === 'HOST')           fillColor = isDark ? '#64748B' : '#475569';
+      else if (node.type === 'TRACKER')        fillColor = isDark ? '#F87171' : '#DC2626';
+      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = isDark ? '#F59E0B' : '#B45309';
+      else if (node.type === 'THIRD_PARTY_DOMAIN') fillColor = isDark ? '#3F3F46' : '#E4E4E7';
 
       if (isFiltered) {
-        ctx.fillStyle = isDark ? 'rgba(26, 22, 16, 0.3)' : 'rgba(243, 239, 230, 0.3)';
-        ctx.strokeStyle = isDark ? 'rgba(58, 48, 32, 0.2)' : 'rgba(206, 198, 180, 0.2)';
+        ctx.fillStyle = isDark ? 'rgba(39, 39, 42, 0.3)' : 'rgba(244, 244, 245, 0.3)';
+        ctx.strokeStyle = isDark ? 'rgba(63, 63, 70, 0.2)' : 'rgba(228, 228, 231, 0.2)';
       } else {
         ctx.fillStyle = fillColor;
-        const strokeBase = isPath ? (isDark ? '#D4A017' : '#C8860A') : (node.type === 'API' ? (isDark ? '#8DB600' : '#6E9B00') : (isDark ? '#F5ECD8' : '#1A1208'));
-        ctx.strokeStyle = isSelected ? (isDark ? '#D4A017' : '#C8860A') : strokeBase;
+        const strokeBase = isDark ? '#3F3F46' : '#D4D4D8';
+        ctx.strokeStyle = isSelected ? (isDark ? '#F59E0B' : '#B45309') : isPath ? (isDark ? '#F59E0B' : '#B45309') : strokeBase;
       }
 
-      ctx.lineWidth = isSelected || isPath ? 2.5 : 1.2;
+      ctx.lineWidth = isSelected || isPath ? 2 : 1;
       ctx.fill();
       ctx.stroke();
 
       // Node Label
       if (!isFiltered || isSelected || isHovered) {
-        ctx.font = `${node.type === 'WEBSITE' ? 'bold 12px' : '10px'} "Space Grotesk", sans-serif`;
-        ctx.fillStyle = isSelected ? (isDark ? '#D4A017' : '#C8860A') : (isDark ? '#F5ECD8' : '#1A1208');
+        ctx.font = `${node.type === 'WEBSITE' ? '600 11px' : '400 10px'} "Inter", sans-serif`;
+        ctx.fillStyle = isSelected ? (isDark ? '#F59E0B' : '#B45309') : (isDark ? '#FAFAFA' : '#09090B');
         ctx.textAlign = 'center';
-        ctx.fillText(node.label || node.id, node.x, node.y + radius + 13);
+        ctx.fillText(node.label || node.id, node.x, node.y + radius + 12);
       }
     }
 

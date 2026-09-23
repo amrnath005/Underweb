@@ -1,13 +1,14 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <title>Underweb — Localhost Intelligence Portal</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Underweb — Intelligence Portal</title>
   <link rel="stylesheet" href="src/ui/styles/theme.css">
   <style>
     body {
-      background: var(--bg-void);
-      color: #ffffff;
+      background: var(--bg-muted);
+      color: var(--text-primary);
       margin: 0;
       padding: 0;
       display: flex;
@@ -20,71 +21,125 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      background: var(--bg-primary);
-      border-bottom: 1px solid var(--border-medium);
-      padding: 10px 24px;
-      height: 52px;
+      background: var(--topbar-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 0 20px;
+      height: 48px;
       box-sizing: border-box;
+      flex-shrink: 0;
     }
     .portal-brand {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
+    }
+    .portal-brand svg, .portal-brand img {
+      width: 22px;
+      height: 22px;
+      color: var(--text-primary);
     }
     .portal-title {
-      font-family: var(--font-display);
-      font-size: 26px;
-      letter-spacing: 0.08em;
-      color: #ffffff;
-      line-height: 1;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
     }
     .portal-tagline {
-      font-family: var(--font-mono);
-      font-size: 9px;
-      color: var(--text-cyan);
-      letter-spacing: 0.1em;
+      font-size: 11px;
+      color: var(--text-muted);
+      margin-left: 6px;
+      padding-left: 8px;
+      border-left: 1px solid var(--border);
     }
-    .view-toggles {
+    .portal-controls {
       display: flex;
+      align-items: center;
       gap: 8px;
+    }
+    .view-segmented {
+      display: flex;
+      background: var(--bg-muted);
+      padding: 2px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border);
+      gap: 2px;
+    }
+    .view-btn {
+      background: transparent;
+      border: none;
+      padding: 4px 12px;
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-radius: 4px;
+      cursor: pointer;
+      transition: all var(--dur-fast) var(--ease);
+    }
+    .view-btn.active {
+      background: var(--bg-base);
+      color: var(--text-primary);
+      box-shadow: var(--shadow-xs);
     }
     .portal-frame-wrap {
       flex: 1;
       width: 100%;
-      height: calc(100vh - 52px);
+      height: calc(100vh - 48px);
       display: flex;
       justify-content: center;
       align-items: stretch;
-      background: var(--bg-void);
+      background: var(--bg-base);
     }
     iframe {
       border: none;
       width: 100%;
       height: 100%;
     }
+    .popup-wrapper-box {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg-muted);
+    }
     .popup-preview-box {
-      width: 420px;
-      height: 600px;
-      margin: 40px auto;
-      border: 1px solid var(--border-medium);
-      border-radius: var(--radius-sm);
+      width: 380px;
+      height: 560px;
+      background: var(--bg-base);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
       overflow: hidden;
-      box-shadow: 0 0 30px rgba(0, 34, 255, 0.4);
+      box-shadow: var(--shadow-md);
     }
   </style>
 </head>
 <body>
   <header class="portal-bar">
     <div class="portal-brand">
-      <img src="assets/branding/scorpion.svg" alt="Scorpion" width="30" height="30">
-      <div>
-        <div class="portal-title">UNDERWEB</div>
-        <div class="portal-tagline">LOCALHOST INTELLIGENCE PORTAL // SCORPION RECON</div>
-      </div>
+      <img src="assets/branding/scorpion.svg" alt="Underweb" width="22" height="22">
+      <span class="portal-title">UNDERWEB</span>
+      <span class="portal-tagline">Architecture Exoskeleton</span>
     </div>
-    <div class="view-toggles">
-      <button id="btnViewDashboard" class="btn btn-electric btn-sm">[ FULL DASHBOARD ]</button>
-      <button id="btnViewPopup" class="btn btn-outline btn-sm">[ EXTENSION POPUP PREVIEW ]</button>
+    
+    <div class="portal-controls">
+      <div class="view-segmented">
+        <button id="btnViewDashboard" class="view-btn active">Dashboard</button>
+        <button id="btnViewPopup" class="view-btn">Popup Preview</button>
+      </div>
+
+      <button id="portalThemeToggle" class="btn-theme" title="Toggle theme">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="5"></circle>
+          <line x1="12" y1="1" x2="12" y2="3"></line>
+          <line x1="12" y1="21" x2="12" y2="23"></line>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+          <line x1="1" y1="12" x2="3" y2="12"></line>
+          <line x1="21" y1="12" x2="23" y2="12"></line>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+        </svg>
+      </button>
     </div>
   </header>
 
@@ -93,21 +148,43 @@
   </div>
 
   <script>
-    const frame = document.getElementById('mainFrame');
-    const wrap = document.getElementById('frameWrap');
+    const savedTheme = localStorage.getItem('uw-theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    const frameWrap = document.getElementById('frameWrap');
     const btnDash = document.getElementById('btnViewDashboard');
     const btnPop = document.getElementById('btnViewPopup');
+    const themeBtn = document.getElementById('portalThemeToggle');
 
-    btnDash.addEventListener('click', () => {
-      btnDash.className = 'btn btn-electric btn-sm';
-      btnPop.className = 'btn btn-outline btn-sm';
-      wrap.innerHTML = '<iframe id="mainFrame" src="src/ui/dashboard/dashboard.html"></iframe>';
-    });
+    let currentView = 'dashboard';
 
-    btnPop.addEventListener('click', () => {
-      btnPop.className = 'btn btn-electric btn-sm';
-      btnDash.className = 'btn btn-outline btn-sm';
-      wrap.innerHTML = '<div class="popup-preview-box"><iframe id="mainFrame" src="src/ui/popup/popup.html"></iframe></div>';
+    function loadView(view) {
+      currentView = view;
+      if (view === 'dashboard') {
+        btnDash.classList.add('active');
+        btnPop.classList.remove('active');
+        frameWrap.innerHTML = '<iframe id="mainFrame" src="src/ui/dashboard/dashboard.html"></iframe>';
+      } else {
+        btnPop.classList.add('active');
+        btnDash.classList.remove('active');
+        frameWrap.innerHTML = '<div class="popup-wrapper-box"><div class="popup-preview-box"><iframe id="mainFrame" src="src/ui/popup/popup.html"></iframe></div></div>';
+      }
+    }
+
+    btnDash.addEventListener('click', () => loadView('dashboard'));
+    btnPop.addEventListener('click', () => loadView('popup'));
+
+    themeBtn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'light' ? 'dark' : 'light';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('uw-theme', next);
+
+      // Notify iframe
+      const ifr = document.getElementById('mainFrame');
+      if (ifr && ifr.contentDocument) {
+        ifr.contentDocument.documentElement.setAttribute('data-theme', next);
+      }
     });
   </script>
 </body>

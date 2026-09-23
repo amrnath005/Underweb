@@ -2,68 +2,75 @@
 <html lang="en" data-theme="light">
 <head>
   <meta charset="UTF-8">
-  <title>Underweb — Deep Intelligence & Architecture Substrate</title>
+  <title>Underweb — Architecture Exoskeleton</title>
   <link rel="stylesheet" href="../styles/theme.css">
   <link rel="stylesheet" href="dashboard.css">
 </head>
 <body>
   <div class="app-layout">
 
-    <!-- ═══════════════════════════════════════════════
-         TOPBAR
-    ═══════════════════════════════════════════════ -->
+    <!-- TOPBAR -->
     <header class="topbar">
       <div class="topbar-left">
-        <!-- Brand -->
         <div class="brand">
-          <img src="../../../assets/branding/scorpion.svg" alt="Underweb Scorpion" width="28" height="28" class="brand-scorpion">
+          <img src="../../../assets/branding/scorpion.svg" alt="Underweb" width="22" height="22" class="brand-scorpion">
           <div class="brand-col">
             <span class="brand-title">UNDERWEB</span>
-            <span class="brand-sub">Architecture Exoskeleton · v1.0</span>
+            <span class="brand-sub">Architecture Exoskeleton</span>
           </div>
-          <span class="badge badge-amber" style="margin-left:4px">Live</span>
         </div>
 
-        <!-- Target site pill -->
+        <div class="topbar-divider"></div>
+
         <div class="target-site-indicator">
           <span id="targetProtocol" class="text-muted" style="font-size:11px">https://</span>
           <span id="targetHostname" class="target-host">Connecting to target tab...</span>
-          <span id="targetStatusBadge" class="badge badge-venom">200 OK</span>
+          <span id="targetStatusBadge" class="badge badge-green">200 OK</span>
         </div>
       </div>
 
       <div class="topbar-right">
         <!-- Theme toggle -->
-        <button id="themeToggleBtn" class="btn-theme" title="Toggle light / dark mode">☀️</button>
+        <button id="themeToggleBtn" class="btn-theme" title="Toggle theme">
+          <svg id="themeIcon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
 
-        <button id="refreshBtn" class="btn btn-outline btn-sm" title="Refresh session telemetry">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+        <button id="refreshBtn" class="btn btn-outline btn-sm">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"></polyline>
             <polyline points="1 20 1 14 7 14"></polyline>
             <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
           </svg>
-          Re-Scan
+          Re-scan
         </button>
 
         <button id="exportDropdownBtn" class="btn btn-primary btn-sm">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          Export Dossier
+          Export
         </button>
       </div>
     </header>
 
-    <!-- ═══════════════════════════════════════════════
-         WORKSPACE
-    ═══════════════════════════════════════════════ -->
+    <!-- WORKSPACE -->
     <div class="workspace">
 
       <!-- Sidebar -->
       <nav class="sidebar">
-        <div class="nav-section-title">System Recon</div>
+        <div class="nav-section-title">Reconnaissance</div>
 
         <button class="nav-item active" data-tab="tab-overview">
           <span class="nav-num">01</span> Overview
@@ -72,92 +79,108 @@
           <span class="nav-num">02</span> Tech Stack
         </button>
         <button class="nav-item" data-tab="tab-network">
-          <span class="nav-num">03</span> Network Intel
+          <span class="nav-num">03</span> Network
         </button>
         <button class="nav-item" data-tab="tab-architecture">
-          <span class="nav-num">04</span> Architecture Graph
+          <span class="nav-num">04</span> Graph
         </button>
         <button class="nav-item" data-tab="tab-infrastructure">
-          <span class="nav-num">05</span> Infrastructure & CDN
+          <span class="nav-num">05</span> Infrastructure
         </button>
         <button class="nav-item" data-tab="tab-privacy">
-          <span class="nav-num">06</span> Privacy & Storage
+          <span class="nav-num">06</span> Privacy
         </button>
         <button class="nav-item" data-tab="tab-security">
-          <span class="nav-num">07</span> Security Posture
+          <span class="nav-num">07</span> Security
         </button>
         <button class="nav-item" data-tab="tab-apis">
-          <span class="nav-num">08</span> API Explorer
+          <span class="nav-num">08</span> APIs
         </button>
 
         <div class="nav-section-title">Investigation</div>
 
         <button class="nav-item" data-tab="tab-investigator">
-          <span class="nav-num">09</span> Click Investigator
+          <span class="nav-num">09</span> Event Investigator
         </button>
         <button class="nav-item" data-tab="tab-learn">
-          <span class="nav-num">10</span> Student Wiki
+          <span class="nav-num">10</span> Knowledge Base
         </button>
         <button class="nav-item" data-tab="tab-compare">
-          <span class="nav-num">11</span> Comparison Engine
+          <span class="nav-num">11</span> Comparison
         </button>
         <button class="nav-item" data-tab="tab-history">
-          <span class="nav-num">12</span> History & Export
+          <span class="nav-num">12</span> Snapshots
         </button>
 
-        <!-- Footer -->
         <div class="sidebar-footer-scorpion">
-          <img src="../../../assets/branding/scorpion.svg" alt="Scorpion" width="20" height="20" style="opacity:0.6">
+          <img src="../../../assets/branding/scorpion.svg" alt="Radar" width="16" height="16" style="opacity:0.6">
           <div class="scorpion-meta">
-            <span>Substrate Radar</span>
-            <span class="scorpion-status">Online · 100% Local</span>
+            <span>Radar Active</span>
+            <span class="scorpion-status">Local runtime</span>
           </div>
         </div>
       </nav>
 
-      <!-- ═══════════════════════════════════════════
-           CONTENT PANELS
-      ═══════════════════════════════════════════ -->
+      <!-- PANELS -->
       <main class="content-viewport">
 
-        <!-- ── 1. OVERVIEW ── -->
+        <!-- 01. OVERVIEW -->
         <section id="tab-overview" class="tab-panel active">
-          <!-- Hero banner -->
-          <div class="editorial-hero-banner">
-            <div class="hero-text-col">
-              <div class="hero-kicker">Exoskeleton Reconnaissance</div>
-              <h1 class="hero-title">EXPLORE THE TECHNOLOGY BENEATH EVERY WEBSITE</h1>
-              <p class="hero-subtitle">Multi-signal runtime telemetry, protocol dissection, and directed dependency mapping synthesized into a technical case study.</p>
+          <div class="hero-strip">
+            <div class="hero-strip-text">
+              <span class="hero-strip-label">Architecture Intelligence</span>
+              <h1 class="hero-strip-title">Explore the technology beneath every website</h1>
+              <p class="hero-strip-sub">Runtime telemetry, dependency mapping, and protocol dissection synthesized into an actionable report.</p>
             </div>
-            <div class="hero-scorpion-badge">
-              <img src="../../../assets/branding/scorpion.svg" alt="Scorpion Stinger" width="52" height="52">
+            <img src="../../../assets/branding/scorpion.svg" alt="Underweb" class="hero-strip-logo">
+          </div>
+
+          <!-- Quick Metrics -->
+          <div class="metrics-row">
+            <div class="metric-tile">
+              <span class="tile-label">Requests</span>
+              <span class="tile-val" id="ovTotalReqs">0</span>
+            </div>
+            <div class="metric-tile">
+              <span class="tile-label">Domains</span>
+              <span class="tile-val" id="ovDomains">0</span>
+            </div>
+            <div class="metric-tile">
+              <span class="tile-label">Third Parties</span>
+              <span class="tile-val" id="ovThirdParty">0</span>
+            </div>
+            <div class="metric-tile">
+              <span class="tile-label">Signatures</span>
+              <span class="tile-val" id="ovTechs">0</span>
+            </div>
+            <div class="metric-tile">
+              <span class="tile-label">Security Grade</span>
+              <span class="tile-val" id="ovSecurityGrade">A</span>
             </div>
           </div>
 
-          <!-- DNA + Architecture grid -->
+          <!-- DNA + Inferred Architecture -->
           <div class="hero-grid">
-            <!-- DNA Radar Card -->
             <div class="card dna-card">
               <div class="card-header">
-                <span class="card-title">🧬 Website DNA Complexity Vector</span>
+                <span class="card-title">Complexity Vector</span>
                 <span class="badge badge-amber" id="dnaScoreBadge">Balanced</span>
               </div>
               <div class="dna-canvas-wrap">
-                <canvas id="dnaCanvas" width="340" height="260"></canvas>
+                <canvas id="dnaCanvas" width="320" height="240"></canvas>
               </div>
             </div>
 
-            <!-- Inferred Architecture Card -->
             <div class="card arch-card">
               <div class="card-header">
-                <span class="card-title">🏛️ Inferred System Archetype</span>
-                <span class="badge badge-venom" id="archConfidenceBadge">High Confidence</span>
+                <span class="card-title">Inferred Archetype</span>
+                <span class="badge badge-green" id="archConfidenceBadge">High Confidence</span>
               </div>
               <div class="arch-body">
                 <div class="arch-name" id="inferredArchName">Server-Side Rendered (SSR) Hydrated App</div>
                 <p class="arch-expl" id="inferredArchExpl">Hydrated client JavaScript takes over an initial server-rendered HTML document, orchestrating API data flow.</p>
                 <div class="arch-signals-box">
-                  <div class="signals-title">Observable Substrate Proofs</div>
+                  <div class="signals-title">Observable Substrate Signals</div>
                   <ul id="archSignalsList" class="signals-list">
                     <li>Initial document markup contains pre-rendered DOM</li>
                     <li>Hydration payload detected in window script tag</li>
@@ -166,65 +189,26 @@
               </div>
             </div>
           </div>
-
-          <!-- Quick Metrics -->
-          <div class="metrics-row stagger">
-            <div class="card metric-tile">
-              <div class="tile-icon">🌐</div>
-              <div class="tile-data">
-                <span class="tile-val" id="ovTotalReqs">0</span>
-                <span class="tile-label">Requests</span>
-              </div>
-            </div>
-            <div class="card metric-tile">
-              <div class="tile-icon">🏢</div>
-              <div class="tile-data">
-                <span class="tile-val" id="ovDomains">0</span>
-                <span class="tile-label">Domains</span>
-              </div>
-            </div>
-            <div class="card metric-tile">
-              <div class="tile-icon">📡</div>
-              <div class="tile-data">
-                <span class="tile-val" id="ovThirdParty">0</span>
-                <span class="tile-label">3rd Parties</span>
-              </div>
-            </div>
-            <div class="card metric-tile">
-              <div class="tile-icon">⚡</div>
-              <div class="tile-data">
-                <span class="tile-val" id="ovTechs">0</span>
-                <span class="tile-label">Tech Signatures</span>
-              </div>
-            </div>
-            <div class="card metric-tile">
-              <div class="tile-icon">🔒</div>
-              <div class="tile-data">
-                <span class="tile-val" id="ovSecurityGrade">A</span>
-                <span class="tile-label">Security Grade</span>
-              </div>
-            </div>
-          </div>
         </section>
 
-        <!-- ── 2. TECH STACK ── -->
+        <!-- 02. TECH STACK -->
         <section id="tab-stack" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Substrate Signatures</div>
-              <h2>Detected Technology Stack</h2>
-              <p class="panel-desc">Evidence-backed detection of frameworks, libraries, build tools, CMS, analytics, and cloud providers.</p>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Signatures</span>
+              <h2 class="page-title">Detected Technology Stack</h2>
+              <p class="page-desc">Evidence-backed detection of frameworks, libraries, build tools, analytics, and infrastructure.</p>
             </div>
           </div>
           <div id="techStackGrid" class="stack-grid"></div>
         </section>
 
-        <!-- ── 3. NETWORK ── -->
+        <!-- 03. NETWORK -->
         <section id="tab-network" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Network Traffic</div>
-              <h2>Network Intelligence & Waterfall</h2>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Telemetry</span>
+              <h2 class="page-title">Network Waterfall & Timing</h2>
             </div>
             <div class="network-filters">
               <input type="text" id="networkSearchInput" class="input-search" placeholder="Filter URL or domain...">
@@ -241,38 +225,35 @@
             </div>
           </div>
 
-          <!-- First Contact -->
           <div class="card first-contact-card">
             <div class="card-header">
-              <span class="card-title">⏱️ "First Contact" Sequence</span>
-              <span class="badge badge-amber">Initial Boot Handshake</span>
+              <span class="card-title">First Contact Sequence</span>
+              <span class="badge badge-amber">Boot Sequence</span>
             </div>
             <div id="firstContactList" class="first-contact-row"></div>
           </div>
 
-          <!-- Waterfall -->
-          <div class="card waterfall-card">
+          <div class="card waterfall-card" style="padding: 0; overflow: hidden;">
             <div id="waterfallContainer" class="waterfall-container"></div>
           </div>
         </section>
 
-        <!-- ── 4. ARCHITECTURE GRAPH ── -->
+        <!-- 04. ARCHITECTURE GRAPH -->
         <section id="tab-architecture" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Directed Dependency Topology</div>
-              <h2>Interactive Architecture Graph</h2>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Topology</span>
+              <h2 class="page-title">Architecture Dependency Graph</h2>
             </div>
             <div class="graph-actions">
-              <button id="btnRunDijkstra" class="btn btn-venom btn-sm">Shortest Path to Tracker</button>
+              <button id="btnRunDijkstra" class="btn btn-outline btn-sm">Path to Tracker</button>
               <button id="btnRunCentrality" class="btn btn-outline btn-sm">Betweenness Centrality</button>
-              <button id="btnResetGraph" class="btn btn-outline btn-sm">Reset Camera</button>
+              <button id="btnResetGraph" class="btn btn-outline btn-sm">Reset View</button>
             </div>
           </div>
 
           <div class="graph-viewport-wrap">
-            <canvas id="architectureCanvas" class="architecture-canvas" width="900" height="520"></canvas>
-            <!-- Inspector Drawer -->
+            <canvas id="architectureCanvas" class="architecture-canvas" width="900" height="500"></canvas>
             <div id="nodeInspectorDrawer" class="node-inspector-drawer">
               <div class="drawer-header">
                 <span id="drawerNodeTitle" class="drawer-title">Node Inspector</span>
@@ -285,63 +266,63 @@
           </div>
         </section>
 
-        <!-- ── 5. INFRASTRUCTURE ── -->
+        <!-- 05. INFRASTRUCTURE -->
         <section id="tab-infrastructure" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Edge & Cloud Resolution</div>
-              <h2>Infrastructure & Cloud Topology</h2>
-              <p class="panel-desc">End-to-end client-to-origin resolution pipeline mapping DNS, IP, ASN, CDN, and Origin Host.</p>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Edge Resolution</span>
+              <h2 class="page-title">Infrastructure & Cloud Topology</h2>
+              <p class="page-desc">Client-to-origin resolution pipeline mapping DNS, IP, ASN, CDN, and origin host.</p>
             </div>
           </div>
           <div id="infraPipelineContainer" class="infra-pipeline"></div>
         </section>
 
-        <!-- ── 6. PRIVACY ── -->
+        <!-- 06. PRIVACY -->
         <section id="tab-privacy" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Surveillance Vectors</div>
-              <h2>Privacy & Client Storage Audit</h2>
-              <p class="panel-desc">Analysis of browser tracking, persistent storage, cookies, and hardware API surveillance.</p>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Privacy Vectors</span>
+              <h2 class="page-title">Client Storage & Tracker Audit</h2>
+              <p class="page-desc">Audit of browser tracking, persistent storage, cookies, and hardware API surface.</p>
             </div>
           </div>
           <div class="privacy-grid">
             <div class="card">
               <div class="card-header">
-                <span class="card-title">🍪 Cookie Security & Hygiene</span>
+                <span class="card-title">Cookie Hygiene</span>
                 <span id="cookieSummaryBadge" class="badge badge-neutral">0 Total</span>
               </div>
               <div id="cookieIssuesContainer" class="privacy-list"></div>
             </div>
             <div class="card">
               <div class="card-header">
-                <span class="card-title">💾 Client-Side Storage</span>
+                <span class="card-title">Storage Footprint</span>
               </div>
               <div id="storageSummaryContainer" class="privacy-list"></div>
             </div>
             <div class="card">
               <div class="card-header">
-                <span class="card-title">📡 Hardware & Permission Surface</span>
+                <span class="card-title">Permission Surface</span>
               </div>
               <div id="permissionsContainer" class="privacy-list"></div>
             </div>
             <div class="card">
               <div class="card-header">
-                <span class="card-title">🕵️ Identified Trackers</span>
+                <span class="card-title">Identified Trackers</span>
               </div>
               <div id="trackersContainer" class="privacy-list"></div>
             </div>
           </div>
         </section>
 
-        <!-- ── 7. SECURITY ── -->
+        <!-- 07. SECURITY -->
         <section id="tab-security" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Defensive Posture</div>
-              <h2>Security Posture & Vulnerability Heuristics</h2>
-              <p class="panel-desc">Inspection of CSP defense-in-depth, HSTS, CORS wildcard risks, and mixed content.</p>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Defense</span>
+              <h2 class="page-title">Security Posture & Headers</h2>
+              <p class="page-desc">Inspection of CSP defense, transport encryption, and origin isolation policies.</p>
             </div>
           </div>
           <div class="security-layout">
@@ -354,43 +335,44 @@
             </div>
             <div class="card">
               <div class="card-header">
-                <span class="card-title">🛡️ Security Header Audit Findings</span>
+                <span class="card-title">Header Audit Findings</span>
               </div>
               <div id="securityFindingsList" class="findings-list"></div>
             </div>
           </div>
         </section>
 
-        <!-- ── 8. APIS ── -->
+        <!-- 08. APIS -->
         <section id="tab-apis" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Data Protocols</div>
-              <h2>API & Protocol Explorer</h2>
-              <p class="panel-desc">Catalog of REST endpoints, GraphQL operations, and WebSockets observed during interaction.</p>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Data Protocols</span>
+              <h2 class="page-title">Observed API Endpoints</h2>
+              <p class="page-desc">Catalog of REST endpoints, GraphQL operations, and WebSockets observed during interaction.</p>
             </div>
           </div>
           <div class="card">
             <div class="card-header">
-              <span class="card-title">🔌 Observed API Transactions</span>
-              <span id="apiCountBadge" class="badge badge-venom">0 Endpoints</span>
+              <span class="card-title">Cataloged Transactions</span>
+              <span id="apiCountBadge" class="badge badge-green">0 Endpoints</span>
             </div>
             <div id="apiListContainer" class="api-list"></div>
           </div>
         </section>
 
-        <!-- ── 9. CLICK INVESTIGATOR ── -->
+        <!-- 09. CLICK INVESTIGATOR -->
         <section id="tab-investigator" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Event Dissection</div>
-              <h2>"What Happens When I Click?"</h2>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Events</span>
+              <h2 class="page-title">Interaction Investigator</h2>
+              <p class="page-desc">Inspect network requests and state mutations triggered by user clicks.</p>
             </div>
             <div class="investigator-controls">
-              <button id="toggleInvestigatorBtn" class="btn btn-primary">
-                ▶ Start Investigation Mode
+              <button id="toggleInvestigatorBtn" class="btn btn-primary btn-sm">
+                Start Recording
               </button>
-              <button id="clearInvestigatorBtn" class="btn btn-outline btn-sm">Clear Log</button>
+              <button id="clearInvestigatorBtn" class="btn btn-outline btn-sm">Clear</button>
             </div>
           </div>
           <div class="card">
@@ -398,38 +380,39 @@
           </div>
         </section>
 
-        <!-- ── 10. LEARN ── -->
+        <!-- 10. LEARN -->
         <section id="tab-learn" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Computer Science Dossier</div>
-              <h2>Student Learning Mode & Architecture Wiki</h2>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Documentation</span>
+              <h2 class="page-title">Architecture Knowledge Base</h2>
+              <p class="page-desc">Detailed explanations of detected technologies and architectural patterns.</p>
             </div>
-            <input type="text" id="learnSearchInput" class="input-search" placeholder="Search concepts (e.g. Next.js, HTTP/2, CSP, Redis)...">
+            <input type="text" id="learnSearchInput" class="input-search" placeholder="Search concepts...">
           </div>
           <div id="learnGrid" class="learn-grid"></div>
         </section>
 
-        <!-- ── 11. COMPARE ── -->
+        <!-- 11. COMPARE -->
         <section id="tab-compare" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Side-by-Side Diff</div>
-              <h2>Website Comparison Engine</h2>
-              <p class="panel-desc">Compare the technology stack, network footprint, and security posture of two websites side-by-side.</p>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Diff</span>
+              <h2 class="page-title">Website Comparison</h2>
+              <p class="page-desc">Compare the technology stack, network footprint, and security posture of two targets.</p>
             </div>
           </div>
           <div id="compareContainer" class="compare-container">
             <div class="compare-row">
               <div class="compare-site-col" id="compareSiteA">
-                <h3>Website A (Active Target)</h3>
+                <h3>Website A (Active)</h3>
                 <div class="compare-metrics" id="siteAMetrics">Loading...</div>
               </div>
               <div class="compare-vs">VS</div>
               <div class="compare-site-col" id="compareSiteB">
-                <h3>Website B (Historical Snapshot)</h3>
+                <h3>Website B (Snapshot)</h3>
                 <select id="compareSelectB" class="select-filter full-width">
-                  <option value="">Select a previously inspected site...</option>
+                  <option value="">Select a previous snapshot...</option>
                 </select>
                 <div class="compare-metrics" id="siteBMetrics">Select a website to compare.</div>
               </div>
@@ -437,23 +420,20 @@
           </div>
         </section>
 
-        <!-- ── 12. HISTORY ── -->
+        <!-- 12. HISTORY -->
         <section id="tab-history" class="tab-panel">
-          <div class="panel-header">
-            <div>
-              <div class="hero-kicker">Persistence & Archives</div>
-              <h2>Inspection History & Local Storage</h2>
+          <div class="page-header">
+            <div class="page-header-left">
+              <span class="page-eyebrow">Archives</span>
+              <h2 class="page-title">Saved Inspection Snapshots</h2>
             </div>
             <div class="export-btn-group">
-              <button id="exportJsonBtn" class="btn btn-outline btn-sm">Download JSON</button>
-              <button id="exportMdBtn" class="btn btn-primary btn-sm">Download Markdown</button>
-              <button id="exportCsvBtn" class="btn btn-outline btn-sm">Download CSV</button>
+              <button id="exportJsonBtn" class="btn btn-outline btn-sm">JSON</button>
+              <button id="exportMdBtn" class="btn btn-primary btn-sm">Markdown</button>
+              <button id="exportCsvBtn" class="btn btn-outline btn-sm">CSV</button>
             </div>
           </div>
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">💾 Saved Website Snapshots</span>
-            </div>
+          <div class="card" style="padding: 0; overflow: hidden;">
             <div id="historyTableContainer" class="history-table-wrap"></div>
           </div>
         </section>
@@ -473,14 +453,25 @@
     </div>
   </div>
 
-  <!-- Theme toggle script (inline so it runs immediately, no flash) -->
+  <!-- Theme toggle script -->
   <script>
     (function() {
       const saved = localStorage.getItem('uw-theme') || 'light';
       document.documentElement.setAttribute('data-theme', saved);
-      const btn = document.getElementById('themeToggleBtn');
-      if (btn) btn.textContent = saved === 'dark' ? '☀️' : '🌙';
+      updateThemeIcon(saved);
     })();
+
+    function updateThemeIcon(theme) {
+      const icon = document.getElementById('themeIcon');
+      if (!icon) return;
+      if (theme === 'dark') {
+        // Moon icon
+        icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+      } else {
+        // Sun icon
+        icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+      }
+    }
 
     document.addEventListener('DOMContentLoaded', function() {
       const btn = document.getElementById('themeToggleBtn');
@@ -491,20 +482,10 @@
         const next = current === 'light' ? 'dark' : 'light';
         html.setAttribute('data-theme', next);
         localStorage.setItem('uw-theme', next);
-        btn.textContent = next === 'dark' ? '☀️' : '🌙';
-        // Animate btn
-        btn.style.transform = 'rotate(180deg) scale(0.8)';
-        setTimeout(() => { btn.style.transform = ''; }, 300);
+        updateThemeIcon(next);
       });
 
-      // Node inspector drawer: show/hide via JS class
       const drawer = document.getElementById('nodeInspectorDrawer');
-      if (drawer) {
-        // Make it visible by default for demo purposes
-        // dashboard.js will control this
-      }
-
-      // Close drawer
       const closeDrawer = document.getElementById('closeDrawerBtn');
       if (closeDrawer && drawer) {
         closeDrawer.addEventListener('click', () => drawer.classList.remove('visible'));

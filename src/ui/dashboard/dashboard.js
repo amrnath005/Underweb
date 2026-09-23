@@ -138,8 +138,8 @@ function setupActions() {
   const toggleBtn = document.getElementById('toggleInvestigatorBtn');
   toggleBtn.addEventListener('click', async () => {
     isRecordingClick = !isRecordingClick;
-    toggleBtn.textContent = isRecordingClick ? '⏹ Stop Investigation Mode' : '▶ Start Investigation Mode';
-    toggleBtn.className = isRecordingClick ? 'btn btn-rose' : 'btn btn-primary';
+    toggleBtn.textContent = isRecordingClick ? 'Stop Recording' : 'Start Recording';
+    toggleBtn.className = isRecordingClick ? 'btn btn-outline btn-sm' : 'btn btn-primary btn-sm';
 
     await chrome.runtime.sendMessage({
       action: 'TOGGLE_CLICK_RECORDER',
@@ -326,12 +326,12 @@ function renderStackTab() {
     card.innerHTML = `
       <div class="tech-card-header">
         <span class="tech-card-name">${tech.name}</span>
-        <span class="badge ${tech.confidence === 'HIGH' ? 'badge-emerald' : 'badge-amber'}">${tech.confidence}</span>
+        <span class="badge ${tech.confidence === 'HIGH' ? 'badge-green' : 'badge-amber'}">${tech.confidence}</span>
       </div>
       <div class="tech-card-desc">${tech.explanation}</div>
       <div class="tech-card-footer">
-        <span class="badge badge-slate">${tech.category}</span>
-        <span>Click for proof &raquo;</span>
+        <span class="badge badge-neutral">${tech.category}</span>
+        <span class="confidence">View evidence &rarr;</span>
       </div>
     `;
 
@@ -462,8 +462,8 @@ function renderPrivacyTab(cookies) {
     privacy.trackers.forEach(tr => {
       trContainer.innerHTML += `
         <div class="privacy-item">
-          <span>${tr.name} (${tr.category})</span>
-          <span class="badge badge-purple">${tr.requestCount} requests</span>
+          <span>${tr.name} <span class="text-muted">(${tr.category})</span></span>
+          <span class="badge badge-amber">${tr.requestCount} requests</span>
         </div>
       `;
     });
@@ -621,7 +621,7 @@ function handleNodeSelect(node) {
     <div style="margin-top: 8px;"><strong>In-Degree:</strong> ${inDeg} (Incoming dependencies)</div>
     <div><strong>Out-Degree:</strong> ${outDeg} (Outgoing dependencies)</div>
     <div style="margin-top: 10px;"><strong>Metadata:</strong></div>
-    <pre style="background: #090d16; padding: 8px; border-radius: 4px; font-size: 11px; overflow-x: auto;">${JSON.stringify(node.metadata || {}, null, 2)}</pre>
+    <pre style="background: var(--bg-muted); color: var(--text-primary); border: 1px solid var(--border); padding: 8px; border-radius: 4px; font-size: 11px; overflow-x: auto; font-family: var(--font-mono);">${JSON.stringify(node.metadata || {}, null, 2)}</pre>
   `;
 }
 
