@@ -88,10 +88,15 @@ function setupNavigation() {
 }
 
 function setupActions() {
-  document.getElementById('refreshBtn').addEventListener('click', loadSessionData);
+  const addListener = (id, evt, fn) => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener(evt, fn);
+  };
+
+  addListener('refreshBtn', 'click', loadSessionData);
 
   // Graph Algorithm buttons
-  document.getElementById('btnRunDijkstra').addEventListener('click', () => {
+  addListener('btnRunDijkstra', 'click', () => {
     if (!activeGraph) return;
     const trackerNode = activeGraph.nodes.get(Array.from(activeGraph.nodes.keys()).find(k => k.startsWith('TRACKER:')));
     const rootDomain = currentSession.primaryDomain;
@@ -108,7 +113,7 @@ function setupActions() {
     }
   });
 
-  document.getElementById('btnRunCentrality').addEventListener('click', () => {
+  addListener('btnRunCentrality', 'click', () => {
     if (!activeGraph) return;
     const betweenness = Centrality.betweennessCentrality(activeGraph);
     const sorted = Array.from(betweenness.entries()).sort((a, b) => b[1] - a[1]);
@@ -116,7 +121,7 @@ function setupActions() {
     alert(`Top 5 Centrality Bridges (Betweenness Score):\n\n${top5}`);
   });
 
-  document.getElementById('btnResetGraph').addEventListener('click', () => {
+  addListener('btnResetGraph', 'click', () => {
     if (graphRenderer) {
       graphRenderer.highlightRoute([]);
       graphRenderer.transform = { x: 450, y: 260, scale: 1.0 };
@@ -125,54 +130,62 @@ function setupActions() {
   });
 
   // Drawer close
-  document.getElementById('closeDrawerBtn').addEventListener('click', () => {
-    document.getElementById('nodeInspectorDrawer').style.display = 'none';
+  addListener('closeDrawerBtn', 'click', () => {
+    const drawer = document.getElementById('nodeInspectorDrawer');
+    if (drawer) drawer.style.display = 'none';
   });
 
   // Modal close
-  document.getElementById('closeModalBtn').addEventListener('click', () => {
-    document.getElementById('evidenceModal').classList.remove('active');
+  addListener('closeModalBtn', 'click', () => {
+    const modal = document.getElementById('evidenceModal');
+    if (modal) modal.classList.remove('active');
   });
 
   // Investigator Controls
   const toggleBtn = document.getElementById('toggleInvestigatorBtn');
-  toggleBtn.addEventListener('click', async () => {
-    isRecordingClick = !isRecordingClick;
-    toggleBtn.textContent = isRecordingClick ? 'Stop Recording' : 'Start Recording';
-    toggleBtn.className = isRecordingClick ? 'btn btn-outline btn-sm' : 'btn btn-primary btn-sm';
+  if (toggleBtn) {
+    toggleBtn.addEventListener('click', async () => {
+      isRecordingClick = !isRecordingClick;
+      toggleBtn.textContent = isRecordingClick ? 'Stop Recording' : 'Start Recording';
+      toggleBtn.className = isRecordingClick ? 'btn btn-outline btn-sm' : 'btn btn-primary btn-sm';
 
-    await chrome.runtime.sendMessage({
-      action: 'TOGGLE_CLICK_RECORDER',
-      tabId: currentTabId,
-      enabled: isRecordingClick,
-      clearPrevious: false
+      if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage) {
+        try {
+          await chrome.runtime.sendMessage({
+            action: 'TOGGLE_CLICK_RECORDER',
+            tabId: currentTabId,
+            enabled: isRecordingClick,
+            clearPrevious: false
+          });
+        } catch {}
+      }
     });
-  });
+  }
 
-  document.getElementById('clearInvestigatorBtn').addEventListener('click', async () => {
+  addListener('clearInvestigatorBtn', 'click', () => {
     if (currentSession) currentSession.interactionLogs = [];
     const container = document.getElementById('clickTimelineContainer');
-    TimelineRenderer.renderClickSequence(container, []);
+    if (container) TimelineRenderer.renderClickSequence(container, []);
   });
 
-  // Student Learning Search
-  document.getElementById('learnSearchInput').addEventListener('input', (e) => {
+  // Search & Filter
+  addListener('learnSearchInput', 'input', (e) => {
     renderLearnTab(e.target.value.toLowerCase().trim());
   });
 
-  // Network Search & Filter
-  document.getElementById('networkSearchInput').addEventListener('input', filterNetworkTable);
-  document.getElementById('networkCategoryFilter').addEventListener('change', filterNetworkTable);
+  addListener('networkSearchInput', 'input', filterNetworkTable);
+  addListener('networkCategoryFilter', 'change', filterNetworkTable);
 
   // Export Buttons
-  document.getElementById('exportJsonBtn').addEventListener('click', exportJson);
-  document.getElementById('exportMdBtn').addEventListener('click', exportMarkdown);
-  document.getElementById('exportCsvBtn').addEventListener('click', exportCsv);
-  document.getElementById('exportDropdownBtn').addEventListener('click', exportMarkdown);
+  addListener('exportJsonBtn', 'click', exportJson);
+  addListener('exportMdBtn', 'click', exportMarkdown);
+  addListener('exportCsvBtn', 'click', exportCsv);
+  addListener('exportDropdownBtn', 'click', exportMarkdown);
 }
 
 async function loadSessionData() {
-  let sessionData = null;
+  try {
+    let sessionData = null;
 
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && currentTabId) {
     try {
@@ -281,34 +294,46 @@ async function loadSessionData() {
 }
 
 function renderOverview() {
-  document.getElementById('ovTotalReqs').textContent = currentSession.stats.totalRequests || 0;
-  document.getElementById('ovDomains').textContent = currentSession.domainsCount || 0;
-  document.getElementById('ovThirdParty').textContent = currentSession.stats.thirdPartyCount || 0;
-  document.getElementById('ovTechs').textContent = detectedTechs.length;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+  setTxt('ovTotalReqs', currentSession.stats.totalRequests || 0);
+  setTxt('ovDomains', currentSession.domainsCount || 0);
+  setTxt('ovThirdParty', currentSession.stats.thirdPartyCount || 0);
+  setTxt('ovTechs', detectedTechs.length);
 
   // Render Website DNA Radar
   const canvas = document.getElementById('dnaCanvas');
-  const metrics = {
-    frontend: Math.min(100, detectedTechs.length * 16),
-    network: Math.min(100, (currentSession.stats.totalRequests / 120) * 100),
-    thirdParty: Math.min(100, (currentSession.stats.thirdPartyCount / 20) * 100),
-    api: Math.min(100, catalogedApis.length * 20),
-    infra: currentSession.security.headers && currentSession.security.headers['cf-ray'] ? 85 : 45,
-    privacy: Math.min(100, detectedTrackers.length * 25)
-  };
-  WebsiteDnaChart.render(canvas, metrics);
+  if (canvas) {
+    const metrics = {
+      frontend: Math.min(100, detectedTechs.length * 16),
+      network: Math.min(100, (currentSession.stats.totalRequests / 120) * 100),
+      thirdParty: Math.min(100, (currentSession.stats.thirdPartyCount / 20) * 100),
+      api: Math.min(100, catalogedApis.length * 20),
+      infra: currentSession.security.headers && currentSession.security.headers['cf-ray'] ? 85 : 45,
+      privacy: Math.min(100, detectedTrackers.length * 25)
+    };
+    WebsiteDnaChart.render(canvas, metrics);
+  }
 }
 
 function renderInferredArchitecture(arch) {
-  document.getElementById('inferredArchName').textContent = arch.archetype;
-  document.getElementById('inferredArchExpl').textContent = arch.explanation;
+  const setTxt = (id, val) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = val;
+  };
+  setTxt('inferredArchName', arch.archetype);
+  setTxt('inferredArchExpl', arch.explanation);
   const list = document.getElementById('archSignalsList');
-  list.innerHTML = '';
-  arch.signals.forEach(sig => {
-    const li = document.createElement('li');
-    li.textContent = sig;
-    list.appendChild(li);
-  });
+  if (list) {
+    list.innerHTML = '';
+    arch.signals.forEach(sig => {
+      const li = document.createElement('li');
+      li.textContent = sig;
+      list.appendChild(li);
+    });
+  }
 }
 
 function renderStackTab() {
@@ -393,6 +418,7 @@ function filterNetworkTable() {
 
 function renderInfrastructureTab(cdnInfo, hostInfo) {
   const container = document.getElementById('infraPipelineContainer');
+  if (!container) return;
   container.innerHTML = '';
 
   const primaryIp = currentSession.ipAddresses && currentSession.ipAddresses.length > 0 ? currentSession.ipAddresses[0] : '';
@@ -417,86 +443,104 @@ function renderInfrastructureTab(cdnInfo, hostInfo) {
 function renderPrivacyTab(cookies) {
   const privacy = PrivacyAnalyzer.analyze(currentSession, cookies);
 
-  document.getElementById('cookieSummaryBadge').textContent = `${privacy.cookies.total} Total`;
+  const badge = document.getElementById('cookieSummaryBadge');
+  if (badge) badge.textContent = `${privacy.cookies.total} Total`;
+
   const cookieContainer = document.getElementById('cookieIssuesContainer');
-  cookieContainer.innerHTML = '';
-  if (privacy.cookies.issues.length === 0) {
-    cookieContainer.innerHTML = '<div class="privacy-item">No cookie hygiene flags found. All cookies use Secure / SameSite flags.</div>';
-  } else {
-    privacy.cookies.issues.slice(0, 5).forEach(iss => {
-      cookieContainer.innerHTML += `
+  if (cookieContainer) {
+    cookieContainer.innerHTML = '';
+    if (privacy.cookies.issues.length === 0) {
+      cookieContainer.innerHTML = '<div class="privacy-item">No cookie hygiene flags found. All cookies use Secure / SameSite flags.</div>';
+    } else {
+      privacy.cookies.issues.slice(0, 5).forEach(iss => {
+        cookieContainer.innerHTML += `
+          <div class="privacy-item">
+            <span><strong>${iss.cookie}:</strong> ${iss.issue}</span>
+            <span class="badge ${iss.severity === 'HIGH' ? 'badge-rose' : 'badge-amber'}">${iss.severity}</span>
+          </div>
+        `;
+      });
+    }
+  }
+
+  // Storage
+  const storageContainer = document.getElementById('storageSummaryContainer');
+  if (storageContainer) {
+    storageContainer.innerHTML = `
+      <div class="privacy-item"><span>LocalStorage Items</span><span class="badge badge-slate">${privacy.storage.localStorage.itemCount}</span></div>
+      <div class="privacy-item"><span>SessionStorage Items</span><span class="badge badge-slate">${privacy.storage.sessionStorage.itemCount}</span></div>
+      <div class="privacy-item"><span>IndexedDB Databases</span><span class="badge badge-slate">${privacy.storage.indexedDB.databaseCount}</span></div>
+    `;
+  }
+
+  // Hardware Permissions
+  const permContainer = document.getElementById('permissionsContainer');
+  if (permContainer) {
+    permContainer.innerHTML = '';
+    privacy.browserApis.capabilities.forEach(cap => {
+      permContainer.innerHTML += `
         <div class="privacy-item">
-          <span><strong>${iss.cookie}:</strong> ${iss.issue}</span>
-          <span class="badge ${iss.severity === 'HIGH' ? 'badge-rose' : 'badge-amber'}">${iss.severity}</span>
+          <span>${cap.name}</span>
+          <span class="badge ${cap.status === 'granted' ? 'badge-rose' : 'badge-slate'}">${cap.status}</span>
         </div>
       `;
     });
   }
 
-  // Storage
-  const storageContainer = document.getElementById('storageSummaryContainer');
-  storageContainer.innerHTML = `
-    <div class="privacy-item"><span>LocalStorage Items</span><span class="badge badge-slate">${privacy.storage.localStorage.itemCount}</span></div>
-    <div class="privacy-item"><span>SessionStorage Items</span><span class="badge badge-slate">${privacy.storage.sessionStorage.itemCount}</span></div>
-    <div class="privacy-item"><span>IndexedDB Databases</span><span class="badge badge-slate">${privacy.storage.indexedDB.databaseCount}</span></div>
-  `;
-
-  // Hardware Permissions
-  const permContainer = document.getElementById('permissionsContainer');
-  permContainer.innerHTML = '';
-  privacy.browserApis.capabilities.forEach(cap => {
-    permContainer.innerHTML += `
-      <div class="privacy-item">
-        <span>${cap.name}</span>
-        <span class="badge ${cap.status === 'granted' ? 'badge-rose' : 'badge-slate'}">${cap.status}</span>
-      </div>
-    `;
-  });
-
   // Trackers
   const trContainer = document.getElementById('trackersContainer');
-  trContainer.innerHTML = '';
-  if (privacy.trackers.length === 0) {
-    trContainer.innerHTML = '<div class="privacy-item">No third-party trackers detected.</div>';
-  } else {
-    privacy.trackers.forEach(tr => {
-      trContainer.innerHTML += `
-        <div class="privacy-item">
-          <span>${tr.name} <span class="text-muted">(${tr.category})</span></span>
-          <span class="badge badge-amber">${tr.requestCount} requests</span>
-        </div>
-      `;
-    });
+  if (trContainer) {
+    trContainer.innerHTML = '';
+    if (privacy.trackers.length === 0) {
+      trContainer.innerHTML = '<div class="privacy-item">No third-party trackers detected.</div>';
+    } else {
+      privacy.trackers.forEach(tr => {
+        trContainer.innerHTML += `
+          <div class="privacy-item">
+            <span>${tr.name} <span class="text-muted">(${tr.category})</span></span>
+            <span class="badge badge-amber">${tr.requestCount} requests</span>
+          </div>
+        `;
+      });
+    }
   }
 }
 
 function renderSecurityTab(cookies) {
   const sec = SecurityAnalyzer.analyze(currentSession, cookies);
   const circle = document.getElementById('securityScoreCircle');
-  circle.textContent = sec.grade;
-  circle.className = `score-circle ${sec.grade === 'A' ? 'border-emerald' : 'border-amber'}`;
+  if (circle) {
+    circle.textContent = sec.grade;
+    circle.className = `score-circle ${sec.grade === 'A' ? 'border-emerald' : 'border-amber'}`;
+  }
 
-  document.getElementById('securityScoreText').textContent = `Security Posture: Grade ${sec.grade} (Score: ${sec.score}/100)`;
-  document.getElementById('ovSecurityGrade').textContent = sec.grade;
+  const scoreText = document.getElementById('securityScoreText');
+  if (scoreText) scoreText.textContent = `Security Posture: Grade ${sec.grade} (Score: ${sec.score}/100)`;
+  const ovGrade = document.getElementById('ovSecurityGrade');
+  if (ovGrade) ovGrade.textContent = sec.grade;
 
   const findingsList = document.getElementById('securityFindingsList');
-  findingsList.innerHTML = '';
-  sec.findings.forEach(f => {
-    findingsList.innerHTML += `
-      <div class="finding-item">
-        <div class="finding-header">
-          <span class="finding-title">${f.title}</span>
-          <span class="badge ${f.severity === 'HIGH' || f.severity === 'CRITICAL' ? 'badge-rose' : 'badge-amber'}">${f.severity}</span>
+  if (findingsList) {
+    findingsList.innerHTML = '';
+    sec.findings.forEach(f => {
+      findingsList.innerHTML += `
+        <div class="finding-item">
+          <div class="finding-header">
+            <span class="finding-title">${f.title}</span>
+            <span class="badge ${f.severity === 'HIGH' || f.severity === 'CRITICAL' ? 'badge-rose' : 'badge-amber'}">${f.severity}</span>
+          </div>
+          <div class="finding-desc">${f.description}</div>
         </div>
-        <div class="finding-desc">${f.description}</div>
-      </div>
-    `;
-  });
+      `;
+    });
+  }
 }
 
 function renderApisTab() {
-  document.getElementById('apiCountBadge').textContent = `${catalogedApis.length} Endpoints`;
+  const badge = document.getElementById('apiCountBadge');
+  if (badge) badge.textContent = `${catalogedApis.length} Endpoints`;
   const container = document.getElementById('apiListContainer');
+  if (!container) return;
   container.innerHTML = '';
 
   if (catalogedApis.length === 0) {
@@ -561,44 +605,50 @@ function renderLearnTab(filterQuery = '') {
 async function renderHistoryTab() {
   const sessions = await StorageManager.getAllSessions();
   const container = document.getElementById('historyTableContainer');
-  container.innerHTML = '';
-
-  if (sessions.length === 0) {
-    container.innerHTML = '<div class="empty-state">No historical snapshots saved yet.</div>';
-    return;
+  if (container) {
+    container.innerHTML = '';
+    if (sessions.length === 0) {
+      container.innerHTML = '<div class="empty-state">No historical snapshots saved yet.</div>';
+    } else {
+      sessions.forEach(s => {
+        container.innerHTML += `
+          <div class="privacy-item" style="margin-bottom: 6px;">
+            <span><strong>${s.primaryDomain}</strong> (${new Date(s.startTime).toLocaleString()})</span>
+            <span class="badge badge-cyan">${s.stats.totalRequests} reqs</span>
+          </div>
+        `;
+      });
+    }
   }
 
-  // Populate compare dropdown
   const selectB = document.getElementById('compareSelectB');
-  selectB.innerHTML = '<option value="">Select a previously inspected site...</option>';
+  if (selectB) {
+    selectB.innerHTML = '<option value="">Select a previously inspected site...</option>';
+    sessions.forEach(s => {
+      selectB.innerHTML += `<option value="${s.id}">${s.primaryDomain} (${new Date(s.startTime).toLocaleTimeString()})</option>`;
+    });
 
-  sessions.forEach(s => {
-    selectB.innerHTML += `<option value="${s.id}">${s.primaryDomain} (${new Date(s.startTime).toLocaleTimeString()})</option>`;
+    selectB.addEventListener('change', () => {
+      const selected = sessions.find(s => s.id === parseInt(selectB.value, 10));
+      const bMetrics = document.getElementById('siteBMetrics');
+      if (selected && bMetrics) {
+        bMetrics.innerHTML = `
+          <div><strong>Domain:</strong> ${selected.primaryDomain}</div>
+          <div><strong>Requests:</strong> ${selected.stats.totalRequests}</div>
+          <div><strong>3rd Parties:</strong> ${selected.stats.thirdPartyCount}</div>
+        `;
+      }
+    });
+  }
 
-    container.innerHTML += `
-      <div class="privacy-item" style="margin-bottom: 6px;">
-        <span><strong>${s.primaryDomain}</strong> (${new Date(s.startTime).toLocaleString()})</span>
-        <span class="badge badge-cyan">${s.stats.totalRequests} reqs</span>
-      </div>
+  const aMetrics = document.getElementById('siteAMetrics');
+  if (aMetrics && currentSession) {
+    aMetrics.innerHTML = `
+      <div><strong>Domain:</strong> ${currentSession.primaryDomain}</div>
+      <div><strong>Requests:</strong> ${currentSession.stats.totalRequests}</div>
+      <div><strong>3rd Parties:</strong> ${currentSession.stats.thirdPartyCount}</div>
     `;
-  });
-
-  selectB.addEventListener('change', () => {
-    const selected = sessions.find(s => s.id === parseInt(selectB.value, 10));
-    if (selected) {
-      document.getElementById('siteBMetrics').innerHTML = `
-        <div><strong>Domain:</strong> ${selected.primaryDomain}</div>
-        <div><strong>Requests:</strong> ${selected.stats.totalRequests}</div>
-        <div><strong>3rd Parties:</strong> ${selected.stats.thirdPartyCount}</div>
-      `;
-    }
-  });
-
-  document.getElementById('siteAMetrics').innerHTML = `
-    <div><strong>Domain:</strong> ${currentSession.primaryDomain}</div>
-    <div><strong>Requests:</strong> ${currentSession.stats.totalRequests}</div>
-    <div><strong>3rd Parties:</strong> ${currentSession.stats.thirdPartyCount}</div>
-  `;
+  }
 }
 
 function handleNodeSelect(node) {

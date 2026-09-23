@@ -32,11 +32,11 @@ export class WebsiteDnaChart {
     const angleStep = (Math.PI * 2) / numAxes;
 
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const gridColor = isDark ? '#27272a' : '#e4e4e7';
-    const textColor = isDark ? '#a1a1aa' : '#71717a';
-    const accentFill = isDark ? 'rgba(245, 158, 11, 0.15)' : 'rgba(217, 119, 6, 0.12)';
-    const accentStroke = isDark ? '#f59e0b' : '#d97706';
-    const pointBg = isDark ? '#09090b' : '#ffffff';
+    const gridColor = isDark ? '#1C212E' : '#E2E8F0';
+    const textColor = isDark ? '#94A3B8' : '#64748B';
+    const accentFill = isDark ? 'rgba(225, 29, 72, 0.18)' : 'rgba(220, 38, 38, 0.12)';
+    const accentStroke = isDark ? '#E11D48' : '#DC2626';
+    const pointBg = isDark ? '#0D0F14' : '#FFFFFF';
 
     // 1. Draw concentric background rings
     ctx.strokeStyle = gridColor;

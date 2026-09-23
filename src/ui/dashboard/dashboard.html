@@ -13,7 +13,7 @@
     <header class="topbar">
       <div class="topbar-left">
         <div class="brand">
-          <img src="../../../assets/branding/scorpion.svg" alt="Underweb" width="22" height="22" class="brand-scorpion">
+          <img src="../../../assets/branding/scorpion.png" alt="Underweb" width="26" height="26" class="brand-scorpion">
           <div class="brand-col">
             <span class="brand-title">UNDERWEB</span>
             <span class="brand-sub">Architecture Exoskeleton</span>
@@ -68,7 +68,7 @@
     <!-- WORKSPACE -->
     <div class="workspace">
 
-      <!-- Sidebar -->
+      <!-- Navigation Sidebar (Streamlined 5 Core Panels) -->
       <nav class="sidebar">
         <div class="nav-section-title">Reconnaissance</div>
 
@@ -79,41 +79,17 @@
           <span class="nav-num">02</span> Tech Stack
         </button>
         <button class="nav-item" data-tab="tab-network">
-          <span class="nav-num">03</span> Network
+          <span class="nav-num">03</span> Network & APIs
         </button>
         <button class="nav-item" data-tab="tab-architecture">
-          <span class="nav-num">04</span> Graph
-        </button>
-        <button class="nav-item" data-tab="tab-infrastructure">
-          <span class="nav-num">05</span> Infrastructure
-        </button>
-        <button class="nav-item" data-tab="tab-privacy">
-          <span class="nav-num">06</span> Privacy
+          <span class="nav-num">04</span> Graph Topology
         </button>
         <button class="nav-item" data-tab="tab-security">
-          <span class="nav-num">07</span> Security
-        </button>
-        <button class="nav-item" data-tab="tab-apis">
-          <span class="nav-num">08</span> APIs
-        </button>
-
-        <div class="nav-section-title">Investigation</div>
-
-        <button class="nav-item" data-tab="tab-investigator">
-          <span class="nav-num">09</span> Event Investigator
-        </button>
-        <button class="nav-item" data-tab="tab-learn">
-          <span class="nav-num">10</span> Knowledge Base
-        </button>
-        <button class="nav-item" data-tab="tab-compare">
-          <span class="nav-num">11</span> Comparison
-        </button>
-        <button class="nav-item" data-tab="tab-history">
-          <span class="nav-num">12</span> Snapshots
+          <span class="nav-num">05</span> Security & Privacy
         </button>
 
         <div class="sidebar-footer-scorpion">
-          <img src="../../../assets/branding/scorpion.svg" alt="Radar" width="16" height="16" style="opacity:0.6">
+          <img src="../../../assets/branding/scorpion.png" alt="Radar" width="20" height="20" style="object-fit: contain;">
           <div class="scorpion-meta">
             <span>Radar Active</span>
             <span class="scorpion-status">Local runtime</span>
@@ -121,21 +97,22 @@
         </div>
       </nav>
 
-      <!-- PANELS -->
+      <!-- PANELS VIEWPORT -->
       <main class="content-viewport">
 
-        <!-- 01. OVERVIEW -->
+        <!-- 01. OVERVIEW COCKPIT -->
         <section id="tab-overview" class="tab-panel active">
+          <!-- Hero Strip -->
           <div class="hero-strip">
             <div class="hero-strip-text">
               <span class="hero-strip-label">Architecture Intelligence</span>
-              <h1 class="hero-strip-title">Explore the technology beneath every website</h1>
-              <p class="hero-strip-sub">Runtime telemetry, dependency mapping, and protocol dissection synthesized into an actionable report.</p>
+              <h1 class="hero-strip-title">EXPLORE THE TECHNOLOGY BENEATH EVERY WEBSITE</h1>
+              <p class="hero-strip-sub">Multi-signal runtime telemetry, protocol dissection, and directed dependency mapping synthesized into a technical dossier.</p>
             </div>
-            <img src="../../../assets/branding/scorpion.svg" alt="Underweb" class="hero-strip-logo">
+            <img src="../../../assets/branding/scorpion.png" alt="Underweb Scorpion" class="hero-strip-logo">
           </div>
 
-          <!-- Quick Metrics -->
+          <!-- Quick Metrics Tiles -->
           <div class="metrics-row">
             <div class="metric-tile">
               <span class="tile-label">Requests</span>
@@ -159,7 +136,7 @@
             </div>
           </div>
 
-          <!-- DNA + Inferred Architecture -->
+          <!-- Hero Grid: DNA + Inferred Architecture -->
           <div class="hero-grid">
             <div class="card dna-card">
               <div class="card-header">
@@ -167,13 +144,13 @@
                 <span class="badge badge-amber" id="dnaScoreBadge">Balanced</span>
               </div>
               <div class="dna-canvas-wrap">
-                <canvas id="dnaCanvas" width="320" height="240"></canvas>
+                <canvas id="dnaCanvas" width="320" height="230"></canvas>
               </div>
             </div>
 
             <div class="card arch-card">
               <div class="card-header">
-                <span class="card-title">Inferred Archetype</span>
+                <span class="card-title">Inferred System Archetype</span>
                 <span class="badge badge-green" id="archConfidenceBadge">High Confidence</span>
               </div>
               <div class="arch-body">
@@ -189,9 +166,27 @@
               </div>
             </div>
           </div>
+
+          <!-- First Contact Handshake Sequence -->
+          <div class="card first-contact-card">
+            <div class="card-header">
+              <span class="card-title">First Contact Sequence</span>
+              <span class="badge badge-amber">Boot Handshake</span>
+            </div>
+            <div id="firstContactList" class="first-contact-row"></div>
+          </div>
+
+          <!-- Edge Resolution Pipeline -->
+          <div class="card">
+            <div class="card-header">
+              <span class="card-title">Edge Resolution Pipeline</span>
+              <span class="badge badge-neutral">Client-to-Origin</span>
+            </div>
+            <div id="infraPipelineContainer" class="infra-pipeline" style="margin-top: 8px;"></div>
+          </div>
         </section>
 
-        <!-- 02. TECH STACK -->
+        <!-- 02. TECH STACK & KNOWLEDGE BASE -->
         <section id="tab-stack" class="tab-panel">
           <div class="page-header">
             <div class="page-header-left">
@@ -201,14 +196,23 @@
             </div>
           </div>
           <div id="techStackGrid" class="stack-grid"></div>
+
+          <!-- Integrated Architecture Knowledge Base -->
+          <div class="card" style="margin-top: 14px;">
+            <div class="card-header">
+              <span class="card-title">Architecture Knowledge Base</span>
+              <input type="text" id="learnSearchInput" class="input-search" placeholder="Search concepts (e.g. Next.js, HTTP/2, CSP)..." style="width: 240px;">
+            </div>
+            <div id="learnGrid" class="learn-grid" style="margin-top: 8px;"></div>
+          </div>
         </section>
 
-        <!-- 03. NETWORK -->
+        <!-- 03. NETWORK, APIS & CLICK INVESTIGATOR -->
         <section id="tab-network" class="tab-panel">
           <div class="page-header">
             <div class="page-header-left">
               <span class="page-eyebrow">Telemetry</span>
-              <h2 class="page-title">Network Waterfall & Timing</h2>
+              <h2 class="page-title">Network Intelligence & Waterfall</h2>
             </div>
             <div class="network-filters">
               <input type="text" id="networkSearchInput" class="input-search" placeholder="Filter URL or domain...">
@@ -225,25 +229,39 @@
             </div>
           </div>
 
-          <div class="card first-contact-card">
-            <div class="card-header">
-              <span class="card-title">First Contact Sequence</span>
-              <span class="badge badge-amber">Boot Sequence</span>
-            </div>
-            <div id="firstContactList" class="first-contact-row"></div>
-          </div>
-
           <div class="card waterfall-card" style="padding: 0; overflow: hidden;">
             <div id="waterfallContainer" class="waterfall-container"></div>
           </div>
+
+          <!-- Observed APIs -->
+          <div class="card" style="margin-top: 14px;">
+            <div class="card-header">
+              <span class="card-title">Observed API Transactions</span>
+              <span id="apiCountBadge" class="badge badge-green">0 Endpoints</span>
+            </div>
+            <div id="apiListContainer" class="api-list"></div>
+          </div>
+
+          <!-- Click Investigator -->
+          <div class="card" style="margin-top: 14px;">
+            <div class="card-header">
+              <span class="card-title">Interaction Investigator</span>
+              <div class="investigator-controls">
+                <button id="toggleInvestigatorBtn" class="btn btn-primary btn-sm">Start Recording</button>
+                <button id="clearInvestigatorBtn" class="btn btn-outline btn-sm">Clear Log</button>
+              </div>
+            </div>
+            <div id="clickTimelineContainer" class="click-timeline-container" style="margin-top: 8px;"></div>
+          </div>
         </section>
 
-        <!-- 04. ARCHITECTURE GRAPH -->
+        <!-- 04. ARCHITECTURE GRAPH TOPOLOGY -->
         <section id="tab-architecture" class="tab-panel">
           <div class="page-header">
             <div class="page-header-left">
               <span class="page-eyebrow">Topology</span>
               <h2 class="page-title">Architecture Dependency Graph</h2>
+              <p class="page-desc">Interactive directed graph modeling dependency depth, client-to-host links, and tracker hops.</p>
             </div>
             <div class="graph-actions">
               <button id="btnRunDijkstra" class="btn btn-outline btn-sm">Path to Tracker</button>
@@ -253,7 +271,7 @@
           </div>
 
           <div class="graph-viewport-wrap">
-            <canvas id="architectureCanvas" class="architecture-canvas" width="900" height="500"></canvas>
+            <canvas id="architectureCanvas" class="architecture-canvas" width="900" height="520"></canvas>
             <div id="nodeInspectorDrawer" class="node-inspector-drawer">
               <div class="drawer-header">
                 <span id="drawerNodeTitle" class="drawer-title">Node Inspector</span>
@@ -266,65 +284,16 @@
           </div>
         </section>
 
-        <!-- 05. INFRASTRUCTURE -->
-        <section id="tab-infrastructure" class="tab-panel">
-          <div class="page-header">
-            <div class="page-header-left">
-              <span class="page-eyebrow">Edge Resolution</span>
-              <h2 class="page-title">Infrastructure & Cloud Topology</h2>
-              <p class="page-desc">Client-to-origin resolution pipeline mapping DNS, IP, ASN, CDN, and origin host.</p>
-            </div>
-          </div>
-          <div id="infraPipelineContainer" class="infra-pipeline"></div>
-        </section>
-
-        <!-- 06. PRIVACY -->
-        <section id="tab-privacy" class="tab-panel">
-          <div class="page-header">
-            <div class="page-header-left">
-              <span class="page-eyebrow">Privacy Vectors</span>
-              <h2 class="page-title">Client Storage & Tracker Audit</h2>
-              <p class="page-desc">Audit of browser tracking, persistent storage, cookies, and hardware API surface.</p>
-            </div>
-          </div>
-          <div class="privacy-grid">
-            <div class="card">
-              <div class="card-header">
-                <span class="card-title">Cookie Hygiene</span>
-                <span id="cookieSummaryBadge" class="badge badge-neutral">0 Total</span>
-              </div>
-              <div id="cookieIssuesContainer" class="privacy-list"></div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <span class="card-title">Storage Footprint</span>
-              </div>
-              <div id="storageSummaryContainer" class="privacy-list"></div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <span class="card-title">Permission Surface</span>
-              </div>
-              <div id="permissionsContainer" class="privacy-list"></div>
-            </div>
-            <div class="card">
-              <div class="card-header">
-                <span class="card-title">Identified Trackers</span>
-              </div>
-              <div id="trackersContainer" class="privacy-list"></div>
-            </div>
-          </div>
-        </section>
-
-        <!-- 07. SECURITY -->
+        <!-- 05. SECURITY & PRIVACY AUDIT -->
         <section id="tab-security" class="tab-panel">
           <div class="page-header">
             <div class="page-header-left">
-              <span class="page-eyebrow">Defense</span>
-              <h2 class="page-title">Security Posture & Headers</h2>
-              <p class="page-desc">Inspection of CSP defense, transport encryption, and origin isolation policies.</p>
+              <span class="page-eyebrow">Posture & Privacy</span>
+              <h2 class="page-title">Security Posture & Surveillance Audit</h2>
+              <p class="page-desc">Defense-in-depth header inspection, cookie hygiene, client storage, and tracking surface.</p>
             </div>
           </div>
+
           <div class="security-layout">
             <div class="security-score-banner">
               <div class="score-circle" id="securityScoreCircle">A</div>
@@ -340,101 +309,33 @@
               <div id="securityFindingsList" class="findings-list"></div>
             </div>
           </div>
-        </section>
 
-        <!-- 08. APIS -->
-        <section id="tab-apis" class="tab-panel">
-          <div class="page-header">
-            <div class="page-header-left">
-              <span class="page-eyebrow">Data Protocols</span>
-              <h2 class="page-title">Observed API Endpoints</h2>
-              <p class="page-desc">Catalog of REST endpoints, GraphQL operations, and WebSockets observed during interaction.</p>
-            </div>
-          </div>
-          <div class="card">
-            <div class="card-header">
-              <span class="card-title">Cataloged Transactions</span>
-              <span id="apiCountBadge" class="badge badge-green">0 Endpoints</span>
-            </div>
-            <div id="apiListContainer" class="api-list"></div>
-          </div>
-        </section>
-
-        <!-- 09. CLICK INVESTIGATOR -->
-        <section id="tab-investigator" class="tab-panel">
-          <div class="page-header">
-            <div class="page-header-left">
-              <span class="page-eyebrow">Events</span>
-              <h2 class="page-title">Interaction Investigator</h2>
-              <p class="page-desc">Inspect network requests and state mutations triggered by user clicks.</p>
-            </div>
-            <div class="investigator-controls">
-              <button id="toggleInvestigatorBtn" class="btn btn-primary btn-sm">
-                Start Recording
-              </button>
-              <button id="clearInvestigatorBtn" class="btn btn-outline btn-sm">Clear</button>
-            </div>
-          </div>
-          <div class="card">
-            <div id="clickTimelineContainer" class="click-timeline-container"></div>
-          </div>
-        </section>
-
-        <!-- 10. LEARN -->
-        <section id="tab-learn" class="tab-panel">
-          <div class="page-header">
-            <div class="page-header-left">
-              <span class="page-eyebrow">Documentation</span>
-              <h2 class="page-title">Architecture Knowledge Base</h2>
-              <p class="page-desc">Detailed explanations of detected technologies and architectural patterns.</p>
-            </div>
-            <input type="text" id="learnSearchInput" class="input-search" placeholder="Search concepts...">
-          </div>
-          <div id="learnGrid" class="learn-grid"></div>
-        </section>
-
-        <!-- 11. COMPARE -->
-        <section id="tab-compare" class="tab-panel">
-          <div class="page-header">
-            <div class="page-header-left">
-              <span class="page-eyebrow">Diff</span>
-              <h2 class="page-title">Website Comparison</h2>
-              <p class="page-desc">Compare the technology stack, network footprint, and security posture of two targets.</p>
-            </div>
-          </div>
-          <div id="compareContainer" class="compare-container">
-            <div class="compare-row">
-              <div class="compare-site-col" id="compareSiteA">
-                <h3>Website A (Active)</h3>
-                <div class="compare-metrics" id="siteAMetrics">Loading...</div>
+          <div class="privacy-grid" style="margin-top: 14px;">
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Cookie Hygiene</span>
+                <span id="cookieSummaryBadge" class="badge badge-neutral">0 Total</span>
               </div>
-              <div class="compare-vs">VS</div>
-              <div class="compare-site-col" id="compareSiteB">
-                <h3>Website B (Snapshot)</h3>
-                <select id="compareSelectB" class="select-filter full-width">
-                  <option value="">Select a previous snapshot...</option>
-                </select>
-                <div class="compare-metrics" id="siteBMetrics">Select a website to compare.</div>
+              <div id="cookieIssuesContainer" class="privacy-list"></div>
+            </div>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Client-Side Storage</span>
               </div>
+              <div id="storageSummaryContainer" class="privacy-list"></div>
             </div>
-          </div>
-        </section>
-
-        <!-- 12. HISTORY -->
-        <section id="tab-history" class="tab-panel">
-          <div class="page-header">
-            <div class="page-header-left">
-              <span class="page-eyebrow">Archives</span>
-              <h2 class="page-title">Saved Inspection Snapshots</h2>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Hardware API Surface</span>
+              </div>
+              <div id="permissionsContainer" class="privacy-list"></div>
             </div>
-            <div class="export-btn-group">
-              <button id="exportJsonBtn" class="btn btn-outline btn-sm">JSON</button>
-              <button id="exportMdBtn" class="btn btn-primary btn-sm">Markdown</button>
-              <button id="exportCsvBtn" class="btn btn-outline btn-sm">CSV</button>
+            <div class="card">
+              <div class="card-header">
+                <span class="card-title">Identified Trackers</span>
+              </div>
+              <div id="trackersContainer" class="privacy-list"></div>
             </div>
-          </div>
-          <div class="card" style="padding: 0; overflow: hidden;">
-            <div id="historyTableContainer" class="history-table-wrap"></div>
           </div>
         </section>
 
@@ -465,10 +366,8 @@
       const icon = document.getElementById('themeIcon');
       if (!icon) return;
       if (theme === 'dark') {
-        // Moon icon
         icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
       } else {
-        // Sun icon
         icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
       }
     }

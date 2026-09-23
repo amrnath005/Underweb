@@ -41,18 +41,21 @@ body {
 }
 
 .brand-name {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: 0.08em;
   color: var(--text-primary);
   line-height: 1;
 }
 
 .brand-tagline {
-  font-size: 9px;
-  color: var(--text-muted);
-  line-height: 1;
-  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 1px;
 }
 
 .header-right {
@@ -185,18 +188,23 @@ body {
   gap: 6px;
   width: 100%;
   padding: 8px 12px;
-  background: var(--text-primary);
-  color: var(--bg-base);
-  border: none;
-  border-radius: var(--radius-sm);
-  font-size: 12px;
-  font-weight: 500;
+  background: var(--accent);
+  color: #FFFFFF;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-xs);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
   cursor: pointer;
-  transition: opacity var(--dur-fast) var(--ease);
+  box-shadow: var(--accent-glow);
+  transition: all var(--dur-fast) var(--ease);
 }
 .btn-dashboard:hover {
-  opacity: 0.88;
+  background: var(--accent-hover);
+  transform: translateY(-1px);
 }
 .btn-dashboard:active {
-  opacity: 0.98;
+  transform: translateY(0);
 }

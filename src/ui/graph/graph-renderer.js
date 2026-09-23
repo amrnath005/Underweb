@@ -246,13 +246,13 @@ export class GraphRenderer {
       ctx.lineTo(t.x, t.y);
 
       if (isPathHighlighted) {
-        ctx.strokeStyle = isDark ? '#F59E0B' : '#B45309';
+        ctx.strokeStyle = isDark ? '#E11D48' : '#DC2626';
         ctx.lineWidth = 2.5;
       } else if (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)) {
-        ctx.strokeStyle = isDark ? '#34D399' : '#059669';
+        ctx.strokeStyle = isDark ? '#E11D48' : '#DC2626';
         ctx.lineWidth = 1.8;
       } else {
-        ctx.strokeStyle = isDark ? '#27272A' : '#E4E4E7';
+        ctx.strokeStyle = isDark ? '#1C212E' : '#E2E8F0';
         ctx.lineWidth = 1;
       }
       ctx.stroke();
@@ -261,14 +261,14 @@ export class GraphRenderer {
       if (this.transform.scale > 0.85 && (isPathHighlighted || (this.selectedNode && (s === this.selectedNode || t === this.selectedNode)))) {
         const mx = (s.x + t.x) / 2;
         const my = (s.y + t.y) / 2;
-        ctx.fillStyle = isDark ? '#18181B' : '#FFFFFF';
-        ctx.font = '500 9px "JetBrains Mono", monospace';
+        ctx.fillStyle = isDark ? '#0D0F14' : '#FFFFFF';
+        ctx.font = '600 9px "JetBrains Mono", monospace';
         const labelText = link.relation || '';
         const tw = ctx.measureText(labelText).width;
         ctx.fillRect(mx - tw / 2 - 4, my - 7, tw + 8, 14);
-        ctx.strokeStyle = isDark ? '#3F3F46' : '#E4E4E7';
+        ctx.strokeStyle = isDark ? '#293144' : '#E2E8F0';
         ctx.strokeRect(mx - tw / 2 - 4, my - 7, tw + 8, 14);
-        ctx.fillStyle = isPathHighlighted ? (isDark ? '#F59E0B' : '#B45309') : (isDark ? '#A1A1AA' : '#52525B');
+        ctx.fillStyle = isPathHighlighted ? (isDark ? '#E11D48' : '#DC2626') : (isDark ? '#94A3B8' : '#64748B');
         ctx.fillText(labelText, mx - tw / 2, my + 3);
       }
     }
@@ -295,7 +295,7 @@ export class GraphRenderer {
       else if (node.type === 'CDN')            fillColor = isDark ? '#A78BFA' : '#7C3AED';
       else if (node.type === 'HOST')           fillColor = isDark ? '#64748B' : '#475569';
       else if (node.type === 'TRACKER')        fillColor = isDark ? '#F87171' : '#DC2626';
-      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = isDark ? '#F59E0B' : '#B45309';
+      else if (node.type === 'FIRST_PARTY_DOMAIN') fillColor = isDark ? '#E11D48' : '#DC2626';
       else if (node.type === 'THIRD_PARTY_DOMAIN') fillColor = isDark ? '#3F3F46' : '#E4E4E7';
 
       if (isFiltered) {
@@ -303,8 +303,8 @@ export class GraphRenderer {
         ctx.strokeStyle = isDark ? 'rgba(63, 63, 70, 0.2)' : 'rgba(228, 228, 231, 0.2)';
       } else {
         ctx.fillStyle = fillColor;
-        const strokeBase = isDark ? '#3F3F46' : '#D4D4D8';
-        ctx.strokeStyle = isSelected ? (isDark ? '#F59E0B' : '#B45309') : isPath ? (isDark ? '#F59E0B' : '#B45309') : strokeBase;
+        const strokeBase = isDark ? '#293144' : '#CBD5E1';
+        ctx.strokeStyle = isSelected ? (isDark ? '#E11D48' : '#DC2626') : isPath ? (isDark ? '#E11D48' : '#DC2626') : strokeBase;
       }
 
       ctx.lineWidth = isSelected || isPath ? 2 : 1;
@@ -313,8 +313,8 @@ export class GraphRenderer {
 
       // Node Label
       if (!isFiltered || isSelected || isHovered) {
-        ctx.font = `${node.type === 'WEBSITE' ? '600 11px' : '400 10px'} "Inter", sans-serif`;
-        ctx.fillStyle = isSelected ? (isDark ? '#F59E0B' : '#B45309') : (isDark ? '#FAFAFA' : '#09090B');
+        ctx.font = `${node.type === 'WEBSITE' ? '600 11px' : '400 10px'} "Space Grotesk", sans-serif`;
+        ctx.fillStyle = isSelected ? (isDark ? '#E11D48' : '#DC2626') : (isDark ? '#F1F5F9' : '#090D16');
         ctx.textAlign = 'center';
         ctx.fillText(node.label || node.id, node.x, node.y + radius + 12);
       }
