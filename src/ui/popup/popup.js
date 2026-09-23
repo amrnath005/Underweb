@@ -1,9 +1,45 @@
 // src/ui/popup/popup.js
 // Logic for Underweb's quick popup interface.
-import { createMockSession } from '../../utils/mock-data.js';
+
+function createEmptySession(tabId, url = '', title = '') {
+  let host = '';
+  if (url) {
+    try {
+      host = new URL(url).hostname;
+    } catch {}
+  }
+  return {
+    tabId: tabId || 0,
+    url: url || '',
+    title: title || (host || 'Active Tab'),
+    startTime: Date.now(),
+    primaryDomain: host || 'No active tab',
+    stats: {
+      totalRequests: 0,
+      totalBytes: 0,
+      firstPartyCount: 0,
+      thirdPartyCount: 0,
+      apiCount: 0
+    },
+    domainsCount: host ? 1 : 0,
+    protocols: [],
+    runtime: {
+      frameworks: [],
+      globals: [],
+      apis: [],
+      domMetrics: { frameworkMarkers: [] },
+      storage: { localStorageCount: 0, cookies: [] }
+    },
+    security: {
+      isHttps: url ? url.startsWith('https://') : false,
+      headers: {}
+    }
+  };
+}
 
 document.addEventListener('DOMContentLoaded', async () => {
-  const protocolBadge = document.getElementById('protocolBadge');
+  try {
+    const protocolBadge = document.getElementById('protocolBadge');
   const siteProtocol = document.getElementById('siteProtocol');
   const siteHostname = document.getElementById('siteHostname');
   const securityBadge = document.getElementById('securityBadge');
@@ -40,7 +76,19 @@ document.addEventListener('DOMContentLoaded', async () => {
   });
 
   let session = null;
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && activeTab) {
+
+  // 1. Direct check in chrome.storage.session
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.session && activeTab) {
+    try {
+      const stored = await chrome.storage.session.get([`session_${activeTab.id}`]);
+      if (stored && stored[`session_${activeTab.id}`]) {
+        session = stored[`session_${activeTab.id}`];
+      }
+    } catch {}
+  }
+
+  // 2. Query Background Service Worker via message
+  if (!session && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && activeTab) {
     try {
       const response = await chrome.runtime.sendMessage({
         action: 'GET_TAB_SESSION',
@@ -52,8 +100,9 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch {}
   }
 
+  // 3. Fallback to clean real tab empty shell (NO MOCK DATA)
   if (!session) {
-    session = createMockSession();
+    session = createEmptySession(activeTab ? activeTab.id : 0, activeTab ? activeTab.url : '', activeTab ? activeTab.title : '');
   }
 
     // Render Target URL
@@ -113,6 +162,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         badge.textContent = t.name;
         techBadgesContainer.appendChild(badge);
       });
+    } else {
+      techBadgesContainer.innerHTML = '<span class="text-muted" style="font-size:11px;">None detected yet</span>';
     }
 
     // Infrastructure detection
@@ -150,23 +201,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         badge.textContent = item;
         infraBadgesContainer.appendChild(badge);
       });
+    } else {
+      infraBadgesContainer.innerHTML = '<span class="text-muted" style="font-size:11px;">Awaiting response headers</span>';
     }
 
     // Storage
-    const lsCount = session.runtime.storage ? session.runtime.storage.localStorageCount : 0;
+    const lsCount = session.runtime && session.runtime.storage ? session.runtime.storage.localStorageCount : 0;
     storageMetric.textContent = `${lsCount} LocalStorage Keys`;
 
-    // Query cookies directly via chrome.cookies or fallback
-    if (session.url) {
+    // Query cookies directly via chrome.cookies
+    if (session.url && session.url.startsWith('http')) {
       if (typeof chrome !== 'undefined' && chrome.cookies && chrome.cookies.getAll) {
         chrome.cookies.getAll({ url: session.url }, (cookies) => {
           const count = cookies ? cookies.length : 0;
           cookieMetric.textContent = `${count} Cookies`;
         });
       } else {
-        const count = session.mockCookies ? session.mockCookies.length : 3;
-        cookieMetric.textContent = `${count} Cookies`;
+        cookieMetric.textContent = '0 Cookies';
       }
+    } else {
+      cookieMetric.textContent = '0 Cookies';
     }
   } catch (err) {
     console.error('Failed to load session data in popup:', err);

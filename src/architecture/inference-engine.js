@@ -8,12 +8,20 @@ export class ArchitectureInferenceEngine {
    * @param {Array<object>} detectedTechnologies
    * @param {Array<object>} apis
    * @returns {{ archetype: string, confidence: string, signals: string[], explanation: string }}
-   */
   static infer(sessionSnapshot, detectedTechnologies = [], apis = []) {
     const signals = [];
-    const techNames = detectedTechnologies.map(t => t.name.toLowerCase());
-    const { runtime = {}, security = {} } = sessionSnapshot;
+    const techNames = (detectedTechnologies || []).map(t => t.name.toLowerCase());
+    const { runtime = {}, security = {}, requests = [] } = sessionSnapshot || {};
     const domMetrics = runtime.domMetrics || {};
+
+    if (!sessionSnapshot || (requests.length === 0 && detectedTechnologies.length === 0)) {
+      return {
+        archetype: 'Awaiting Telemetry',
+        confidence: 'LOW',
+        signals: ['No HTTP transactions or DOM script executions captured yet for this tab.'],
+        explanation: 'Underweb is ready. Click "Re-scan" in the top bar to capture live network requests, scripts, and dependencies.'
+      };
+    }
 
     let isPwa = false;
     let isSsr = false;

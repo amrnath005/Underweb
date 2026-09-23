@@ -2,6 +2,7 @@
 // Inter-process messaging dispatcher between Background, Content Scripts, Popup, and Dashboard.
 
 import { Logger } from '../utils/logger.js';
+import { UrlUtils } from '../utils/url-utils.js';
 
 const logger = new Logger('MessageRouter');
 
@@ -28,7 +29,17 @@ export class MessageRouter {
       if (!tabId) {
         return { success: false, error: 'No tabId provided' };
       }
-      const session = this.sessionManager.get(tabId);
+      let session = await this.sessionManager.getAsync(tabId);
+      if (!session && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.get) {
+        try {
+          const tabInfo = await chrome.tabs.get(tabId);
+          if (tabInfo && tabInfo.url && !UrlUtils.isInternalOrSpecial(tabInfo.url)) {
+            session = this.sessionManager.getOrCreate(tabId, tabInfo.url);
+            if (tabInfo.title) session.title = tabInfo.title;
+            if (tabInfo.favIconUrl) session.favicon = tabInfo.favIconUrl;
+          }
+        } catch {}
+      }
       if (!session) {
         return { success: false, error: `No active session for tab ${tabId}` };
       }
@@ -40,7 +51,7 @@ export class MessageRouter {
       const tabId = sender.tab ? sender.tab.id : message.tabId;
       if (!tabId) return { success: false };
 
-      const session = this.sessionManager.getOrCreate(tabId, message.url || (sender.tab && sender.tab.url));
+      const session = await this.sessionManager.getOrCreateAsync(tabId, message.url || (sender.tab && sender.tab.url));
       if (message.payload) {
         // Merge runtime data
         if (message.payload.globals) session.runtime.globals = message.payload.globals;
@@ -53,6 +64,7 @@ export class MessageRouter {
         if (message.payload.security) {
           Object.assign(session.security, message.payload.security);
         }
+        this.sessionManager.schedulePersist(tabId);
       }
       return { success: true };
     });

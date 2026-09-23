@@ -20,7 +20,6 @@ import { SecurityAnalyzer } from '../../security/security-analyzer.js';
 import { KNOWLEDGE_BASE } from '../../../data/providers.js';
 import { StorageManager } from '../../storage/indexeddb.js';
 import { TimeUtils } from '../../utils/time-utils.js';
-import { createMockSession } from '../../utils/mock-data.js';
 
 let currentTabId = null;
 let currentSession = null;
@@ -31,8 +30,76 @@ let catalogedApis = [];
 let detectedTrackers = [];
 let isRecordingClick = false;
 
+function createEmptySession(tabId, url = '', title = '') {
+  let host = '';
+  let apex = '';
+  if (url) {
+    try {
+      const u = new URL(url);
+      host = u.hostname;
+      const parts = host.split('.');
+      apex = parts.length > 2 ? parts.slice(-2).join('.') : host;
+    } catch {}
+  }
+
+  return {
+    tabId: tabId || 0,
+    url: url || '',
+    title: title || (host ? host : 'Awaiting Target Tab'),
+    favicon: '',
+    startTime: Date.now(),
+    primaryDomain: host || 'Ready to Inspect',
+    primaryApex: apex || '',
+    stats: {
+      totalRequests: 0,
+      totalBytes: 0,
+      firstPartyCount: 0,
+      thirdPartyCount: 0,
+      apiCount: 0,
+      scriptCount: 0,
+      stylesheetCount: 0,
+      imageCount: 0,
+      fontCount: 0,
+      trackerCount: 0,
+      websocketCount: 0
+    },
+    domainsCount: host ? 1 : 0,
+    firstPartyDomainsCount: host ? 1 : 0,
+    thirdPartyDomainsCount: 0,
+    ipAddresses: [],
+    protocols: [],
+    domains: host ? [host] : [],
+    thirdPartyDomains: [],
+    firstPartyDomains: host ? [host] : [],
+    requests: [],
+    runtime: {
+      globals: [],
+      frameworks: [],
+      libraries: [],
+      apis: [],
+      storage: {
+        localStorageCount: 0,
+        localStorageKeys: [],
+        sessionStorageCount: 0,
+        indexedDbDatabases: [],
+        cookies: []
+      },
+      permissions: {},
+      domMetrics: {}
+    },
+    security: {
+      isHttps: url ? url.startsWith('https://') : false,
+      headers: {},
+      csp: null,
+      hsts: null,
+      cors: {}
+    },
+    interactionLogs: []
+  };
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
-  // 1. Resolve Tab ID
+  // 1. Resolve Target Tab ID
   const urlParams = new URLSearchParams(window.location.search);
   const tabIdParam = urlParams.get('tabId');
 
@@ -40,8 +107,10 @@ document.addEventListener('DOMContentLoaded', async () => {
     currentTabId = parseInt(tabIdParam, 10);
   } else if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      if (tab) currentTabId = tab.id;
+      // Find the most recent active web tab in the current window (skip extension pages)
+      const tabs = await chrome.tabs.query({ currentWindow: true });
+      const webTab = tabs.find(t => t.url && (t.url.startsWith('http://') || t.url.startsWith('https://')));
+      if (webTab) currentTabId = webTab.id;
     } catch {}
   }
 
@@ -93,7 +162,16 @@ function setupActions() {
     if (el) el.addEventListener(evt, fn);
   };
 
-  addListener('refreshBtn', 'click', loadSessionData);
+  addListener('refreshBtn', 'click', async () => {
+    if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.reload && currentTabId) {
+      try {
+        await chrome.tabs.reload(currentTabId);
+      } catch {}
+      setTimeout(loadSessionData, 900);
+    } else {
+      await loadSessionData();
+    }
+  });
 
   // Graph Algorithm buttons
   addListener('btnRunDijkstra', 'click', () => {
@@ -200,26 +278,47 @@ async function loadSessionData() {
   try {
     let sessionData = null;
 
-  if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && currentTabId) {
-    try {
-      const res = await chrome.runtime.sendMessage({
-        action: 'GET_TAB_SESSION',
-        tabId: currentTabId
-      });
-      if (res && res.success && res.data) {
-        sessionData = res.data;
-      }
-    } catch (err) {
-      console.warn('Chrome runtime message failed, defaulting to demo substrate:', err);
+    // 1. Direct read from chrome.storage.session (survives service worker sleep/wake)
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.session && currentTabId) {
+      try {
+        const stored = await chrome.storage.session.get([`session_${currentTabId}`]);
+        if (stored && stored[`session_${currentTabId}`]) {
+          sessionData = stored[`session_${currentTabId}`];
+        }
+      } catch {}
     }
-  }
 
-  // Fallback to rich mock session if running in localhost / standalone browser
-  if (!sessionData) {
-    sessionData = createMockSession();
-  }
+    // 2. Query Background Service Worker via message
+    if (!sessionData && typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.sendMessage && currentTabId) {
+      try {
+        const res = await chrome.runtime.sendMessage({
+          action: 'GET_TAB_SESSION',
+          tabId: currentTabId
+        });
+        if (res && res.success && res.data) {
+          sessionData = res.data;
+        }
+      } catch (err) {
+        console.warn('Background service query:', err);
+      }
+    }
 
-  currentSession = sessionData;
+    // 3. If no session recorded yet, query Chrome tab for real URL and title
+    if (!sessionData && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.get && currentTabId) {
+      try {
+        const tabInfo = await chrome.tabs.get(currentTabId);
+        if (tabInfo && tabInfo.url) {
+          sessionData = createEmptySession(currentTabId, tabInfo.url, tabInfo.title);
+        }
+      } catch {}
+    }
+
+    // 4. Default to clean empty readiness session (NO MOCK DATA)
+    if (!sessionData) {
+      sessionData = createEmptySession(currentTabId);
+    }
+
+    currentSession = sessionData;
 
   // Header info
   if (currentSession.url) {
@@ -279,10 +378,10 @@ async function loadSessionData() {
     renderSecurityTab(cookies || []);
   };
 
-  if (typeof chrome !== 'undefined' && chrome.cookies && chrome.cookies.getAll && currentSession.url) {
+  if (typeof chrome !== 'undefined' && chrome.cookies && chrome.cookies.getAll && currentSession.url && currentSession.url.startsWith('http')) {
     chrome.cookies.getAll({ url: currentSession.url }, handleCookies);
   } else {
-    handleCookies(currentSession.mockCookies || []);
+    handleCookies([]);
   }
 
   // 11. Render APIs

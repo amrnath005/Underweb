@@ -178,6 +178,7 @@ export class TabSession {
       protocols: Array.from(this.protocols),
       domains: Array.from(this.domains),
       thirdPartyDomains: Array.from(this.thirdPartyDomains),
+      firstPartyDomains: Array.from(this.firstPartyDomains),
       requests: this.requests.slice(-200), // Return recent requests for display
       runtime: this.runtime,
       security: this.security,
@@ -185,12 +186,73 @@ export class TabSession {
       isRecordingInteractions: this.isRecordingInteractions
     };
   }
+
+  /**
+   * Reconstruct a TabSession instance from a serialized snapshot.
+   * @param {object} snapshot
+   * @returns {TabSession}
+   */
+  static fromSnapshot(snapshot) {
+    if (!snapshot) return null;
+    const session = new TabSession(snapshot.tabId, snapshot.url);
+    session.title = snapshot.title || '';
+    session.favicon = snapshot.favicon || '';
+    session.startTime = snapshot.startTime || Date.now();
+    session.primaryDomain = snapshot.primaryDomain || '';
+    session.primaryApex = snapshot.primaryApex || '';
+    session.stats = snapshot.stats ? { ...snapshot.stats } : session.stats;
+
+    session.domains = new Set(snapshot.domains || []);
+    session.thirdPartyDomains = new Set(snapshot.thirdPartyDomains || []);
+    session.firstPartyDomains = new Set(snapshot.firstPartyDomains || []);
+    session.ipAddresses = new Set(snapshot.ipAddresses || []);
+    session.protocols = new Set(snapshot.protocols || []);
+
+    session.requests = snapshot.requests ? [...snapshot.requests] : [];
+    session.requestsById = new Map();
+    for (const r of session.requests) {
+      if (r && r.id) session.requestsById.set(r.id, r);
+    }
+
+    session.runtime = snapshot.runtime ? { ...snapshot.runtime } : session.runtime;
+    session.security = snapshot.security ? { ...snapshot.security } : session.security;
+    session.interactionLogs = snapshot.interactionLogs ? [...snapshot.interactionLogs] : [];
+    session.isRecordingInteractions = !!snapshot.isRecordingInteractions;
+
+    return session;
+  }
 }
 
 export class SessionManager {
   constructor() {
     /** @type {Map<number, TabSession>} */
     this.sessions = new Map();
+    /** @type {Map<number, any>} */
+    this._persistTimeouts = new Map();
+  }
+
+  /**
+   * Debounced persistence of TabSession to chrome.storage.session.
+   * @param {number} tabId
+   */
+  schedulePersist(tabId) {
+    if (typeof chrome === 'undefined' || !chrome.storage || !chrome.storage.session) return;
+    if (this._persistTimeouts.has(tabId)) return;
+
+    const timeout = setTimeout(async () => {
+      this._persistTimeouts.delete(tabId);
+      const session = this.sessions.get(tabId);
+      if (session) {
+        try {
+          const snapshot = session.getSnapshot();
+          await chrome.storage.session.set({ [`session_${tabId}`]: snapshot });
+        } catch (err) {
+          logger.warn(`Failed to persist session_${tabId} to storage:`, err);
+        }
+      }
+    }, 150);
+
+    this._persistTimeouts.set(tabId, timeout);
   }
 
   /**
@@ -211,16 +273,64 @@ export class SessionManager {
       session.primaryApex = DomainUtils.getApexDomain(session.primaryDomain);
       session.security.isHttps = UrlUtils.isSecure(url);
     }
+    this.schedulePersist(tabId);
     return session;
   }
 
   /**
-   * Retrieve existing session or null.
+   * Async get or create tab session, hydrating from storage.session if worker woke up.
+   * @param {number} tabId
+   * @param {string} [url]
+   * @returns {Promise<TabSession>}
+   */
+  async getOrCreateAsync(tabId, url = '') {
+    let session = await this.getAsync(tabId);
+    if (!session) {
+      session = this.getOrCreate(tabId, url);
+    } else if (url && (!session.url || session.url !== url)) {
+      session.url = url;
+      session.primaryDomain = UrlUtils.getHostname(url);
+      session.primaryApex = DomainUtils.getApexDomain(session.primaryDomain);
+      session.security.isHttps = UrlUtils.isSecure(url);
+      this.schedulePersist(tabId);
+    }
+    return session;
+  }
+
+  /**
+   * Synchronous get from in-memory cache.
    * @param {number} tabId
    * @returns {TabSession|null}
    */
   get(tabId) {
     return this.sessions.get(tabId) || null;
+  }
+
+  /**
+   * Asynchronous get: checks in-memory cache first, then hydrates from chrome.storage.session.
+   * @param {number} tabId
+   * @returns {Promise<TabSession|null>}
+   */
+  async getAsync(tabId) {
+    if (this.sessions.has(tabId)) {
+      return this.sessions.get(tabId);
+    }
+    // Attempt hydration from chrome.storage.session (survives service worker sleep/wake)
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.session) {
+      try {
+        const key = `session_${tabId}`;
+        const stored = await chrome.storage.session.get([key]);
+        if (stored && stored[key]) {
+          const session = TabSession.fromSnapshot(stored[key]);
+          this.sessions.set(tabId, session);
+          logger.debug(`Hydrated tab session ${tabId} from chrome.storage.session`);
+          return session;
+        }
+      } catch (err) {
+        logger.warn(`Failed to hydrate tab session ${tabId}:`, err);
+      }
+    }
+    return null;
   }
 
   /**
@@ -231,6 +341,7 @@ export class SessionManager {
   resetTab(tabId, newUrl = '') {
     logger.debug(`Resetting session for tab ${tabId}`);
     this.sessions.set(tabId, new TabSession(tabId, newUrl));
+    this.schedulePersist(tabId);
   }
 
   /**
@@ -238,9 +349,16 @@ export class SessionManager {
    * @param {number} tabId
    */
   removeTab(tabId) {
+    if (this._persistTimeouts.has(tabId)) {
+      clearTimeout(this._persistTimeouts.get(tabId));
+      this._persistTimeouts.delete(tabId);
+    }
     if (this.sessions.has(tabId)) {
       logger.debug(`Removing session for closed tab ${tabId}`);
       this.sessions.delete(tabId);
+    }
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.session) {
+      chrome.storage.session.remove([`session_${tabId}`]).catch(() => {});
     }
   }
 }

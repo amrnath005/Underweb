@@ -11,8 +11,39 @@ const logger = new Logger('ServiceWorker');
 const sessionManager = new SessionManager();
 const messageRouter = new MessageRouter(sessionManager);
 
+// Configure storage.session access level for MV3
+if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.session && chrome.storage.session.setAccessLevel) {
+  chrome.storage.session.setAccessLevel({
+    accessLevel: 'TRUSTED_AND_UNTRUSTED_CONTEXTS'
+  }).catch(() => {});
+}
+
 // Start message router listener
 messageRouter.listen();
+
+// Inject content script into existing tabs on install or extension reload
+if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onInstalled) {
+  chrome.runtime.onInstalled.addListener(async () => {
+    logger.info('Underweb Extension installed or reloaded.');
+    if (chrome.tabs && chrome.scripting) {
+      try {
+        const tabs = await chrome.tabs.query({ url: ['http://*/*', 'https://*/*'] });
+        for (const tab of tabs) {
+          if (!tab.id || UrlUtils.isInternalOrSpecial(tab.url)) continue;
+          try {
+            await chrome.scripting.executeScript({
+              target: { tabId: tab.id },
+              files: ['src/content/content.js']
+            });
+            logger.info(`Injected content script into existing tab ${tab.id} (${tab.url})`);
+          } catch {}
+        }
+      } catch (err) {
+        logger.warn('Failed to inject content script on install:', err);
+      }
+    }
+  });
+}
 
 // Active request cache during in-flight lifecycle
 // requestId -> { startTime, url, method, type, initiator }
@@ -104,6 +135,7 @@ chrome.webRequest.onHeadersReceived.addListener(
       ip: details.ip || '',
       responseHeaders: respHeadersObj
     });
+    sessionManager.schedulePersist(details.tabId);
   },
   { urls: ['<all_urls>'] },
   ['responseHeaders', 'extraHeaders']
@@ -135,6 +167,7 @@ chrome.webRequest.onCompleted.addListener(
       duration,
       size
     });
+    sessionManager.schedulePersist(details.tabId);
   },
   { urls: ['<all_urls>'] },
   ['responseHeaders']
@@ -152,6 +185,7 @@ chrome.webRequest.onErrorOccurred.addListener(
         status: 0,
         statusText: details.error || 'NET_ERROR'
       });
+      sessionManager.schedulePersist(details.tabId);
     }
   },
   { urls: ['<all_urls>'] }

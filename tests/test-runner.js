@@ -15,6 +15,8 @@ import { DependencyDepth } from '../src/algorithms/dependency-depth.js';
 import { EvidenceRecord, EVIDENCE_TYPES } from '../src/evidence/evidence-engine.js';
 import { IpAnalyzer } from '../src/infrastructure/ip-analyzer.js';
 import { AsnAnalyzer } from '../src/infrastructure/asn-analyzer.js';
+import { TabSession, SessionManager } from '../src/background/session-manager.js';
+import { createMockSession } from '../src/utils/mock-data.js';
 
 let passed = 0;
 let failed = 0;
@@ -138,6 +140,52 @@ suite('Infrastructure & ASN Matcher', () => {
 
   const awsAsn = AsnAnalyzer.lookup('52.1.2.3');
   assert(awsAsn.asn === 'AS16509' && awsAsn.org.includes('Amazon'), 'Resolves AWS ASN');
+});
+
+// -------------------------------------------------------------
+// 6. TabSession & SessionManager Lifecycle (Phase 1)
+// -------------------------------------------------------------
+suite('TabSession & SessionManager Lifecycle', () => {
+  const session = new TabSession(42, 'https://example.com/app');
+  session.recordRequest({
+    requestId: 'req_test_1',
+    url: 'https://example.com/api/data',
+    method: 'GET',
+    type: 'xmlhttprequest',
+    size: 2048,
+    duration: 45,
+    ip: '93.184.216.34',
+    status: 200
+  });
+
+  assert(session.stats.totalRequests === 1, 'Records single request in stats');
+  assert(session.stats.totalBytes === 2048, 'Tracks byte payload');
+  assert(session.domains.has('example.com'), 'Tracks domain in set');
+  assert(session.ipAddresses.has('93.184.216.34'), 'Tracks IP address');
+
+  // Snapshot & Hydration Test
+  const snapshot = session.getSnapshot();
+  assert(snapshot.tabId === 42, 'Snapshot retains tabId');
+  assert(snapshot.requests.length === 1, 'Snapshot serializes requests array');
+
+  const hydrated = TabSession.fromSnapshot(snapshot);
+  assert(hydrated instanceof TabSession, 'fromSnapshot returns TabSession instance');
+  assert(hydrated.tabId === 42, 'Hydrated instance retains tabId');
+  assert(hydrated.domains.has('example.com'), 'Hydrated instance restores Set objects');
+  assert(hydrated.requestsById.has('req_test_1'), 'Hydrated instance restores requestsById Map');
+
+  // SessionManager in-memory tests
+  const sm = new SessionManager();
+  const created = sm.getOrCreate(101, 'https://test.org');
+  assert(created.tabId === 101, 'SessionManager creates tab session');
+  assert(sm.get(101) === created, 'SessionManager retrieves existing session synchronously');
+
+  sm.removeTab(101);
+  assert(sm.get(101) === null, 'SessionManager removes tab cleanly');
+
+  // Mock data fixture isolation test
+  const fixture = createMockSession();
+  assert(fixture && fixture.primaryDomain.length > 0, 'Mock session remains available as test fixture');
 });
 
 // -------------------------------------------------------------
