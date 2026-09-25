@@ -45,6 +45,15 @@
           </svg>
         </button>
 
+        <div id="demoPickerWrap" style="display: none; align-items: center; gap: 6px; margin-right: 6px;">
+          <span style="font-size: 10px; font-family: var(--font-mono); color: var(--accent); font-weight: 700;">PLAYGROUND:</span>
+          <select id="demoSnapshotSelect" style="font-size: 11px; padding: 4px 8px; background: var(--bg-muted); color: var(--text-primary); border: 1px solid var(--border); border-radius: var(--radius-xs); outline: none; cursor: pointer;">
+            <option value="shopify">Shopify E-Commerce</option>
+            <option value="nextjs">Next.js SaaS App</option>
+            <option value="wordpress">WordPress Publishing</option>
+          </select>
+        </div>
+
         <button id="refreshBtn" class="btn btn-outline btn-sm">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <polyline points="23 4 23 10 17 10"></polyline>
@@ -267,6 +276,8 @@
               <button id="btnRunDijkstra" class="btn btn-outline btn-sm">Path to Tracker</button>
               <button id="btnRunCentrality" class="btn btn-outline btn-sm">Centrality Bridges</button>
               <button id="btnFitGraph" class="btn btn-outline btn-sm">Fit View</button>
+              <button id="btnExportMermaid" class="btn btn-outline btn-sm" title="Export Mermaid Markdown">Mermaid</button>
+              <button id="btnExportSvg" class="btn btn-outline btn-sm" title="Export Vector SVG">SVG</button>
               <button id="btnZoomIn" class="btn btn-outline btn-sm" title="Zoom In">+</button>
               <button id="btnZoomOut" class="btn btn-outline btn-sm" title="Zoom Out">−</button>
             </div>

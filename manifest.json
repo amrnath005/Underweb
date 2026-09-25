@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Underweb — Website Intelligence & Architecture Explorer",
   "short_name": "Underweb",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Explore the technology, network, APIs, and architecture behind every website.",
   "icons": {
     "16": "assets/icons/icon16.png",

@@ -23,6 +23,8 @@ import { SecurityAnalyzer } from '../../security/security-analyzer.js';
 import { KNOWLEDGE_BASE } from '../../../data/providers.js';
 import { StorageManager } from '../../storage/indexeddb.js';
 import { TimeUtils } from '../../utils/time-utils.js';
+import { GraphExporter } from '../../architecture/graph-exporter.js';
+import { DEMO_SNAPSHOTS } from '../../../data/demo-snapshots.js';
 
 let currentTabId = null;
 let currentSession = null;
@@ -243,6 +245,28 @@ function setupActions() {
     if (graphRenderer) graphRenderer.fitToScreen();
   });
 
+  addListener('btnExportMermaid', 'click', () => {
+    if (!activeGraph) return;
+    const mermaidCode = GraphExporter.toMermaid(activeGraph, { direction: 'TD' });
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(mermaidCode).then(() => {
+        const btn = document.getElementById('btnExportMermaid');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1800);
+        }
+      }).catch(() => {});
+    }
+    downloadBlob(mermaidCode, `underweb-architecture-${currentSession?.primaryDomain || 'graph'}.mmd`, 'text/vnd.mermaid');
+  });
+
+  addListener('btnExportSvg', 'click', () => {
+    if (!activeGraph) return;
+    const svgCode = GraphExporter.toSvg(activeGraph);
+    downloadBlob(svgCode, `underweb-architecture-${currentSession?.primaryDomain || 'graph'}.svg`, 'image/svg+xml');
+  });
+
   addListener('btnZoomIn', 'click', () => {
     if (graphRenderer) graphRenderer.zoomIn();
   });
@@ -359,12 +383,47 @@ async function loadSessionData() {
       } catch {}
     }
 
-    // 4. Default to clean empty readiness session (NO MOCK DATA)
+    // 4. Check for Web Playground / GitHub Pages mode
+    const isWebPlayground = typeof chrome === 'undefined' || !chrome.tabs || (new URLSearchParams(window.location.search)).has('demo');
+    const demoPicker = document.getElementById('demoPickerWrap');
+    const demoSelect = document.getElementById('demoSnapshotSelect');
+
+    if (isWebPlayground && demoPicker && demoSelect) {
+      demoPicker.style.display = 'flex';
+      const urlParams = new URLSearchParams(window.location.search);
+      const chosen = urlParams.get('sample') || demoSelect.value || 'shopify';
+      demoSelect.value = chosen;
+      if (DEMO_SNAPSHOTS[chosen]) {
+        sessionData = DEMO_SNAPSHOTS[chosen];
+      }
+
+      if (!demoSelect.hasAttribute('data-wired')) {
+        demoSelect.setAttribute('data-wired', 'true');
+        demoSelect.addEventListener('change', (e) => {
+          const val = e.target.value;
+          if (DEMO_SNAPSHOTS[val]) {
+            currentSession = DEMO_SNAPSHOTS[val];
+            renderCurrentSession();
+          }
+        });
+      }
+    }
+
+    // 5. Default to clean empty readiness session (NO MOCK DATA)
     if (!sessionData) {
       sessionData = createEmptySession(currentTabId);
     }
 
     currentSession = sessionData;
+    renderCurrentSession();
+  } catch (err) {
+    console.error('Error loading session data:', err);
+  }
+}
+
+function renderCurrentSession() {
+  if (!currentSession) return;
+  try {
 
   // Header info
   if (currentSession.url) {
@@ -431,6 +490,8 @@ async function loadSessionData() {
     renderSecurityTab(cookies || []);
   };
 
+  const runtimeCookies = (currentSession.runtime && currentSession.runtime.storage && currentSession.runtime.storage.cookies) || [];
+
   if (typeof chrome !== 'undefined' && chrome.cookies && chrome.cookies.getAll && currentSession.url && currentSession.url.startsWith('http')) {
     chrome.cookies.getAll({ url: currentSession.url }, (urlCookies = []) => {
       const cookieMap = new Map();
@@ -463,27 +524,27 @@ async function loadSessionData() {
       }
     });
   } else {
-    handleCookies([]);
+    handleCookies(runtimeCookies);
   }
 
   // 11. Render APIs
   renderApisTab();
 
-    // 12. Render Click Investigator
-    TimelineRenderer.renderClickSequence(
-      document.getElementById('clickTimelineContainer'),
-      currentSession.interactionLogs || []
-    );
+  // 12. Render Click Investigator
+  TimelineRenderer.renderClickSequence(
+    document.getElementById('clickTimelineContainer'),
+    currentSession.interactionLogs || []
+  );
 
-    // 13. Render Learn
-    renderLearnTab();
+  // 13. Render Learn
+  renderLearnTab();
 
-    // 14. Save snapshot in local IndexedDB
-    StorageManager.saveSession(currentSession);
-    renderHistoryTab();
+  // 14. Save snapshot in local IndexedDB
+  StorageManager.saveSession(currentSession);
+  renderHistoryTab();
 
   } catch (err) {
-    console.error('Failed to load session:', err);
+    console.error('Failed to render session:', err);
   }
 }
 

@@ -4,6 +4,20 @@ All notable changes to the **Underweb** project will be documented in this file.
 
 ---
 
+## [1.2.0] - 2026-09-25
+
+### Added
+- **GitHub Actions Automated CI Workflow**: `.github/workflows/ci.yml` running validation and test matrix on Node.js 18, 20, and 22 across push and PR events.
+- **Technology Signature Validator CLI**: `scripts/validate-signature.js` enforcing schema constraints, valid evidence keys, and the Zero Fabrication rule across all 207 technology definitions.
+- **One-Click Architecture Diagram Exporters**: `GraphExporter` generating GitHub-native Mermaid Markdown (`.mmd`) diagrams and standalone vector SVG (`.svg`) files directly from the interactive architecture canvas.
+- **Live Interactive Web Playground**: GitHub Pages web demo with real-world recorded production telemetry snapshots (Next.js SaaS, Shopify Enterprise, WordPress CMS) allowing instant exploration without extension installation.
+- **Deep WebAssembly (WASM) Toolchain Attribution**: `WasmDetector` identifying `.wasm` binary payloads and attributing source compiler toolchains (Rust `wasm-bindgen`, Go/TinyGo `wasm_exec`, Emscripten C/C++, AssemblyScript).
+- **Source Map Exposure Auditing**: `SourcemapDetector` passively flagging exposed production `.map` assets and `SourceMap` headers in security audit findings.
+- **Mozilla Firefox (Gecko MV3) Target**: `scripts/build-firefox-package.js` automating Gecko MV3 manifest transformation, import integrity verification, AST compilation check, and bundle generation (`dist/Underweb-Firefox.zip`).
+- **Expanded Test Suite (Suites 17 & 18)**: 147 automated unit assertions across 18 test suites covering diagram generation, WASM toolchain identification, and source map audits.
+
+---
+
 ## [1.1.0] - 2026-09-24
 
 ### Fixed

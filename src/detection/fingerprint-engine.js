@@ -4,6 +4,7 @@
 
 import { TECHNOLOGIES, TECH_BY_ID } from '../../data/technologies.js';
 import { EvidenceRecord, EVIDENCE_TYPES } from '../evidence/evidence-engine.js';
+import { WasmDetector } from './wasm-detector.js';
 
 export class FingerprintEngine {
   /**
@@ -463,6 +464,20 @@ export class FingerprintEngine {
           }
         }
       }
+    }
+
+    // -------------------------------------------------------------
+    // PHASE 2.5: DEEP WEBASSEMBLY (WASM) & TOOLCHAIN DETECTION
+    // -------------------------------------------------------------
+    try {
+      const wasmTechs = WasmDetector.detect(sessionSnapshot);
+      for (const wt of wasmTechs) {
+        if (!detectedRecords.has(wt.id)) {
+          detectedRecords.set(wt.id, wt.evidence);
+        }
+      }
+    } catch (err) {
+      console.warn('WasmDetector execution failed:', err);
     }
 
     // -------------------------------------------------------------

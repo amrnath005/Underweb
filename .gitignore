@@ -1,5 +1,6 @@
 node_modules/
 dist/package/
+dist/firefox-package/
 .DS_Store
 Thumbs.db
 *.log

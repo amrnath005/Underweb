@@ -1,4 +1,5 @@
-// scripts/build-edge-package.js
+// scripts/build-firefox-package.js
+// Production build and validation script for Mozilla Firefox (Gecko MV3).
 import fs from 'fs';
 import path from 'path';
 import vm from 'vm';
@@ -10,10 +11,10 @@ const __dirname = path.dirname(__filename);
 
 const ROOT = path.resolve(__dirname, '..');
 const DIST = path.join(ROOT, 'dist');
-const PKG_DIR = path.join(DIST, 'package');
-const ZIP_PATH = path.join(DIST, 'Underweb-Edge.zip');
+const PKG_DIR = path.join(DIST, 'firefox-package');
+const ZIP_PATH = path.join(DIST, 'Underweb-Firefox.zip');
 
-console.log('=== Underweb Microsoft Edge Production Packaging ===\n');
+console.log('=== Underweb Mozilla Firefox Production Packaging ===\n');
 
 // 1. Clean and prepare dist directory
 if (!fs.existsSync(DIST)) {
@@ -46,8 +47,6 @@ function copyDir(src, dest, exclude = []) {
 
 // 2. Copy production files
 console.log('1. Copying production runtime assets...');
-// manifest.json
-fs.copyFileSync(path.join(ROOT, 'manifest.json'), path.join(PKG_DIR, 'manifest.json'));
 
 // assets/
 copyDir(path.join(ROOT, 'assets'), path.join(PKG_DIR, 'assets'));
@@ -58,15 +57,36 @@ copyDir(path.join(ROOT, 'data'), path.join(PKG_DIR, 'data'));
 // src/ (excluding mock-data.js)
 copyDir(path.join(ROOT, 'src'), path.join(PKG_DIR, 'src'), ['mock-data.js']);
 
-console.log('   Copied manifest.json, assets/, data/, src/ (excluded mock-data.js)');
+// 3. Transform and adapt manifest.json for Mozilla Firefox MV3
+console.log('\n2. Adapting Manifest V3 for Mozilla Firefox Gecko engine...');
+const rootManifestRaw = fs.readFileSync(path.join(ROOT, 'manifest.json'), 'utf8');
+const manifest = JSON.parse(rootManifestRaw);
 
-// 3. Manifest Validation
-console.log('\n2. Validating Manifest V3 for Microsoft Edge...');
-const manifestRaw = fs.readFileSync(path.join(PKG_DIR, 'manifest.json'), 'utf8');
-const manifest = JSON.parse(manifestRaw);
+// Add Gecko browser_specific_settings required by AMO
+manifest.browser_specific_settings = {
+  gecko: {
+    id: "underweb@extension.org",
+    strict_min_version: "115.0"
+  }
+};
 
+// Firefox Gecko MV3 background script specification
+manifest.background = {
+  scripts: ["src/background/service-worker.js"],
+  type: "module"
+};
+
+fs.writeFileSync(path.join(PKG_DIR, 'manifest.json'), JSON.stringify(manifest, null, 2), 'utf8');
+console.log('   ✔ Injected browser_specific_settings.gecko.id: "underweb@extension.org"');
+console.log('   ✔ Adapted background entry to background.scripts: ["src/background/service-worker.js"]');
+
+// 4. Manifest Validation
+console.log('\n3. Validating Manifest V3 for Firefox AMO compliance...');
 if (manifest.manifest_version !== 3) {
   throw new Error('manifest_version must be 3');
+}
+if (!manifest.browser_specific_settings?.gecko?.id) {
+  throw new Error('browser_specific_settings.gecko.id is required for Firefox MV3');
 }
 if (!manifest.name || manifest.name.length > 75) {
   throw new Error(`Invalid manifest.name length: ${manifest.name?.length}`);
@@ -74,28 +94,19 @@ if (!manifest.name || manifest.name.length > 75) {
 if (!manifest.description || manifest.description.length > 132) {
   throw new Error(`manifest.description exceeds store limit (132 chars): ${manifest.description?.length}`);
 }
-if (manifest.optional_permissions) {
-  throw new Error('manifest contains unexpected optional_permissions');
-}
 if (manifest.permissions.includes('debugger')) {
   throw new Error('debugger permission must not be in production manifest');
 }
-if (manifest.permissions.includes('declarativeNetRequest')) {
-  throw new Error('declarativeNetRequest permission is not used and must be removed');
-}
 
-console.log('   ✔ Manifest JSON is valid');
+console.log('   ✔ Firefox Manifest JSON is valid');
 console.log('   ✔ Manifest version:', manifest.manifest_version);
 console.log('   ✔ Extension name:', manifest.name);
-console.log('   ✔ Short name:', manifest.short_name);
-console.log('   ✔ Version:', manifest.version);
-console.log(`   ✔ Description (${manifest.description.length} chars):`, manifest.description);
+console.log('   ✔ Gecko ID:', manifest.browser_specific_settings.gecko.id);
+console.log('   ✔ Strict min version:', manifest.browser_specific_settings.gecko.strict_min_version);
 console.log('   ✔ Permissions:', manifest.permissions);
-console.log('   ✔ Host permissions:', manifest.host_permissions);
-console.log('   ✔ Content Security Policy:', manifest.content_security_policy);
 
-// 4. Validate all imported modules in PKG_DIR
-console.log('\n3. Validating ES module import resolution in production package...');
+// 5. Validate all imported modules in PKG_DIR
+console.log('\n4. Validating ES module import resolution in Firefox package...');
 let jsFilesCount = 0;
 let brokenImports = 0;
 
@@ -124,12 +135,12 @@ function checkImports(dir) {
 checkImports(PKG_DIR);
 
 if (brokenImports > 0) {
-  throw new Error(`Found ${brokenImports} broken imports in production package.`);
+  throw new Error(`Found ${brokenImports} broken imports in Firefox package.`);
 }
 console.log(`   ✔ All ${jsFilesCount} JS files have 100% resolved imports (0 broken)`);
 
-// 5. Syntax validation across all JS files
-console.log('\n4. Validating JavaScript syntax and AST compilation...');
+// 6. Syntax validation across all JS files
+console.log('\n5. Validating JavaScript syntax and AST compilation...');
 function checkSyntax(dir) {
   for (const item of fs.readdirSync(dir)) {
     const fullPath = path.join(dir, item);
@@ -148,8 +159,8 @@ function checkSyntax(dir) {
 checkSyntax(PKG_DIR);
 console.log('   ✔ All JS files compiled cleanly with zero syntax errors');
 
-// 6. Check that HTML and CSS files exist
-console.log('\n5. Validating UI assets in package...');
+// 7. Check that HTML and CSS files exist
+console.log('\n6. Validating UI assets in package...');
 const requiredUI = [
   'assets/branding/scorpion.png',
   'assets/icons/icon16.png',
@@ -173,8 +184,8 @@ for (const reqFile of requiredUI) {
 }
 console.log(`   ✔ All ${requiredUI.length} required UI assets and templates present`);
 
-// 7. Create ZIP archive
-console.log('\n6. Creating Microsoft Edge Extension ZIP Archive...');
+// 8. Create ZIP archive
+console.log('\n7. Creating Mozilla Firefox Extension ZIP Archive...');
 const zipScript = `
 $pkg = '${PKG_DIR}'
 $zip = '${ZIP_PATH}'
@@ -184,15 +195,15 @@ Compress-Archive -Path "$pkg\\*" -DestinationPath "$zip" -CompressionLevel Optim
 const zipResult = spawnSync('powershell', ['-NoProfile', '-Command', zipScript], { encoding: 'utf8' });
 if (zipResult.status !== 0) {
   console.error(zipResult.stderr);
-  throw new Error('Failed to create ZIP archive');
+  throw new Error('Failed to create Firefox ZIP archive');
 }
 
 console.log(`   ✔ ZIP created at: ${ZIP_PATH}`);
 const zipStat = fs.statSync(ZIP_PATH);
 console.log(`   ✔ ZIP size: ${(zipStat.size / 1024).toFixed(2)} KB`);
 
-// 8. Inspect ZIP internal root structure
-console.log('\n7. Verifying ZIP internal archive structure...');
+// 9. Inspect ZIP internal root structure
+console.log('\n8. Verifying ZIP internal archive structure...');
 const inspectScript = `
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = [System.IO.Compression.ZipFile]::OpenRead('${ZIP_PATH}')
@@ -210,13 +221,9 @@ if (inspectResult.status !== 0) {
 const entries = JSON.parse(inspectResult.stdout.trim());
 console.log(`   ✔ Total entries in ZIP: ${entries.length}`);
 
-// Verify manifest.json is at root
 if (!entries.includes('manifest.json')) {
   throw new Error('CRITICAL: manifest.json is NOT at the root of the ZIP archive!');
 }
-console.log('   ✔ CONFIRMED: manifest.json is directly at the root of Underweb-Edge.zip');
+console.log('   ✔ CONFIRMED: manifest.json is directly at the root of Underweb-Firefox.zip');
 
-const rootFolders = new Set(entries.map(e => e.split('/')[0]).filter(Boolean));
-console.log('   ✔ Root items:', Array.from(rootFolders));
-
-console.log('\n=== Microsoft Edge Packaging Completed Successfully! ===');
+console.log('\n=== Mozilla Firefox Packaging Completed Successfully! ===');

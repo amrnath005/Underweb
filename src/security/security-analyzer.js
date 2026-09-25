@@ -7,6 +7,7 @@ import { HeaderAnalyzer } from './header-analyzer.js';
 import { MixedContentDetector, MIXED_CONTENT_TYPES } from './mixed-content.js';
 import { CorsAnalyzer } from './cors-analyzer.js';
 import { CookieAnalyzer } from '../privacy/cookie-analyzer.js';
+import { SourcemapDetector } from '../detection/sourcemap-detector.js';
 import { UrlUtils } from '../utils/url-utils.js';
 
 export const SECURITY_STATES = {
@@ -238,6 +239,14 @@ export class SecurityAnalyzer {
       });
     }
     isolationScore = Math.max(0, Math.min(15, isolationScore));
+
+    // -------------------------------------------------------------
+    // CATEGORY 6: Code Exposure & Source Maps (Informational)
+    // -------------------------------------------------------------
+    const sourcemapFindings = SourcemapDetector.detect(requests);
+    sourcemapFindings.forEach(f => {
+      allFindings.push(f);
+    });
 
     // -------------------------------------------------------------
     // TOTAL SCORE & GRADE RESOLUTION

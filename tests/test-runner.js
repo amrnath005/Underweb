@@ -23,6 +23,9 @@ import { FingerprintEngine } from '../src/detection/fingerprint-engine.js';
 import { SecurityAnalyzer } from '../src/security/security-analyzer.js';
 import { MixedContentDetector } from '../src/security/mixed-content.js';
 import { HeaderAnalyzer } from '../src/security/header-analyzer.js';
+import { GraphExporter } from '../src/architecture/graph-exporter.js';
+import { WasmDetector } from '../src/detection/wasm-detector.js';
+import { SourcemapDetector } from '../src/detection/sourcemap-detector.js';
 
 let passed = 0;
 let failed = 0;
@@ -718,6 +721,106 @@ suite('Security Analyzer & Evidence-Driven Posture Scoring', () => {
   const criticalPlaintext = plaintextRes.findings.find(f => f.id === 'PLAINTEXT_HTTP');
   assert(criticalPlaintext && criticalPlaintext.severity === 'CRITICAL', 'Flags CRITICAL Plaintext Unencrypted HTTP Connection');
   assert(criticalPlaintext.resourceScope === 'MAIN_DOCUMENT', 'Flags main document as plaintext');
+});
+
+// -------------------------------------------------------------
+// 17. Architecture Graph Exporters (Mermaid & SVG)
+// -------------------------------------------------------------
+suite('Architecture Graph Exporters (Mermaid & SVG)', () => {
+  const g = new DirectedGraph();
+  g.addNode('example.com', 'example.com', 'ORIGIN_HOST');
+  g.addNode('cdn.cloudflare.net', 'Cloudflare CDN', 'CDN_EDGE');
+  g.addNode('api.example.com', 'GraphQL API', 'API_GATEWAY');
+  g.addNode('google-analytics.com', 'Google Analytics', 'TRACKER');
+
+  g.addEdge('example.com', 'cdn.cloudflare.net', 'DELIVERED_BY');
+  g.addEdge('example.com', 'api.example.com', 'CALLS');
+  g.addEdge('example.com', 'google-analytics.com', 'DISPATCHES');
+
+  // Mermaid export test
+  const mermaid = GraphExporter.toMermaid(g, { direction: 'TD' });
+  assert(typeof mermaid === 'string', 'toMermaid returns string');
+  assert(mermaid.startsWith('flowchart TD'), 'Mermaid begins with flowchart TD');
+  assert(mermaid.includes('Cloudflare CDN'), 'Mermaid includes CDN node label');
+  assert(mermaid.includes('GraphQL API'), 'Mermaid includes API node label');
+  assert(mermaid.includes('-->|"CALLS"|'), 'Mermaid includes CALLS edge relation');
+  assert(mermaid.includes('classDef origin'), 'Mermaid includes origin styling class');
+
+  // SVG export test
+  const svg = GraphExporter.toSvg(g, { width: 800, height: 600 });
+  assert(typeof svg === 'string', 'toSvg returns string');
+  assert(svg.includes('<svg xmlns="http://www.w3.org/2000/svg"'), 'Valid SVG header');
+  assert(svg.includes('Underweb Architecture Graph'), 'SVG includes title');
+  assert(svg.includes('Cloudflare CDN'), 'SVG includes node labels');
+  assert(svg.includes('marker id="arrow"'), 'SVG defines directional arrow markers');
+});
+
+// -------------------------------------------------------------
+// 18. Deep WebAssembly (WASM) & Sourcemap Telemetry
+// -------------------------------------------------------------
+suite('Deep WebAssembly & Sourcemap Telemetry', () => {
+  // 1. Rust wasm-bindgen detection
+  const rustSession = {
+    url: 'https://rust-app.dev/',
+    requests: [
+      { url: 'https://rust-app.dev/pkg/wasm_calculator_bg.wasm', type: 'wasm' }
+    ],
+    runtime: { globals: [{ name: 'WebAssembly' }] }
+  };
+  const rustDetected = WasmDetector.detect(rustSession);
+  assert(rustDetected.some(d => d.id === 'webassembly'), 'Detects base WebAssembly binary payload');
+  assert(rustDetected.some(d => d.id === 'wasm-rust'), 'Correctly attributes Rust (wasm-bindgen) toolchain');
+
+  // 2. Go / TinyGo detection
+  const goSession = {
+    url: 'https://golang-wasm.org/',
+    requests: [
+      { url: 'https://golang-wasm.org/assets/wasm_exec.wasm', type: 'other' }
+    ]
+  };
+  const goDetected = WasmDetector.detect(goSession);
+  assert(goDetected.some(d => d.id === 'wasm-go'), 'Detects Go / TinyGo wasm_exec runtime');
+
+  // 3. Emscripten & AssemblyScript
+  const emscriptenSession = {
+    url: 'https://game-port.io/',
+    requests: [
+      { url: 'https://game-port.io/bin/engine.emscripten.wasm', type: 'wasm' }
+    ]
+  };
+  const emscriptenDetected = WasmDetector.detect(emscriptenSession);
+  assert(emscriptenDetected.some(d => d.id === 'wasm-emscripten'), 'Detects Emscripten C/C++ toolchain');
+
+  const ascSession = {
+    url: 'https://as-demo.org/',
+    requests: [
+      { url: 'https://as-demo.org/build/optimized.asc.wasm', type: 'wasm' }
+    ]
+  };
+  const ascDetected = WasmDetector.detect(ascSession);
+  assert(ascDetected.some(d => d.id === 'wasm-assemblyscript'), 'Detects AssemblyScript compiler output');
+
+  // 4. Exposed Sourcemap Detector
+  const sourcemapRequests = [
+    { url: 'https://corp-internal.com/static/bundle.js', responseHeaders: { 'sourcemap': 'bundle.js.map' } },
+    { url: 'https://corp-internal.com/static/app.chunk.js.map' }
+  ];
+  const smFindings = SourcemapDetector.detect(sourcemapRequests);
+  assert(smFindings.length > 0, 'Detects exposed source map files or headers');
+  assert(smFindings[0].id === 'EXPOSED_PRODUCTION_SOURCEMAP', 'Returns EXPOSED_PRODUCTION_SOURCEMAP finding');
+  assert(smFindings[0].severity === 'INFO', 'Severity is appropriately rated INFO for security audit');
+  assert(smFindings[0].count === 2, 'Counts exposed source map references accurately');
+
+  // 5. SecurityAnalyzer integration with Sourcemap
+  const secAuditSession = {
+    url: 'https://corp-internal.com/',
+    primaryDomain: 'corp-internal.com',
+    primaryApex: 'corp-internal.com',
+    security: { isHttps: true, headers: {} },
+    requests: sourcemapRequests
+  };
+  const secReport = SecurityAnalyzer.analyze(secAuditSession, []);
+  assert(secReport.findings.some(f => f.id === 'EXPOSED_PRODUCTION_SOURCEMAP'), 'SecurityAnalyzer includes source map audit findings in report');
 });
 
 // -------------------------------------------------------------
