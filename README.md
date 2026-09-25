@@ -1,7 +1,3 @@
-<p align="center">
-  <img src="assets/branding/scorpion.svg" width="80" height="80" alt="Underweb Logo" />
-</p>
-
 # Underweb
 
 > "Explore the technology beneath every website."
