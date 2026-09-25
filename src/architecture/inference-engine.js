@@ -8,6 +8,7 @@ export class ArchitectureInferenceEngine {
    * @param {Array<object>} detectedTechnologies
    * @param {Array<object>} apis
    * @returns {{ archetype: string, confidence: string, signals: string[], explanation: string }}
+   */
   static infer(sessionSnapshot, detectedTechnologies = [], apis = []) {
     const signals = [];
     const techNames = (detectedTechnologies || []).map(t => t.name.toLowerCase());

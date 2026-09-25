@@ -1,5 +1,10 @@
-// src/ui/popup/popup.js
-// Logic for Underweb's quick popup interface.
+// Apply saved theme immediately
+(function initTheme() {
+  const savedTheme = localStorage.getItem('uw-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', savedTheme);
+})();
+
+import { FingerprintEngine } from '../../detection/fingerprint-engine.js';
 
 function createEmptySession(tabId, url = '', title = '') {
   let host = '';
@@ -56,6 +61,29 @@ document.addEventListener('DOMContentLoaded', async () => {
   const storageMetric = document.getElementById('storageMetric');
 
   const openDashboardBtn = document.getElementById('openDashboardBtn');
+  const themeToggleBtn = document.getElementById('themeToggleBtn');
+
+  function updatePopupThemeIcon(theme) {
+    const icon = document.getElementById('popupThemeIcon');
+    if (!icon) return;
+    if (theme === 'dark') {
+      icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+    } else {
+      icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+    }
+  }
+
+  if (themeToggleBtn) {
+    const html = document.documentElement;
+    updatePopupThemeIcon(html.getAttribute('data-theme') || 'light');
+    themeToggleBtn.addEventListener('click', () => {
+      const curr = html.getAttribute('data-theme') || 'light';
+      const next = curr === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('uw-theme', next);
+      updatePopupThemeIcon(next);
+    });
+  }
 
   let activeTab = null;
   if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.query) {
@@ -133,35 +161,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     thirdPartyCount.textContent = session.stats.thirdPartyCount || 0;
     apiCount.textContent = session.stats.apiCount || (session.runtime.apis ? session.runtime.apis.length : 0);
 
-    // Detected Tech
-    const techItems = [];
-    if (session.runtime.frameworks) {
-      session.runtime.frameworks.forEach(f => techItems.push({ name: f.name || f, category: 'framework' }));
-    }
-    if (session.runtime.globals) {
-      session.runtime.globals.forEach(g => {
-        if (!techItems.some(t => t.name === g.name)) {
-          techItems.push({ name: g.name, category: g.category });
-        }
-      });
-    }
-    if (session.runtime.domMetrics && session.runtime.domMetrics.frameworkMarkers) {
-      session.runtime.domMetrics.frameworkMarkers.forEach(m => {
-        if (!techItems.some(t => t.name === m.framework)) {
-          techItems.push({ name: m.framework, category: 'framework' });
-        }
-      });
-    }
+    // Detected Tech via universal FingerprintEngine
+    const detectedTechs = FingerprintEngine.detect(session);
+    techCountBadge.textContent = `${detectedTechs.length} Techs`;
 
-    techCountBadge.textContent = techItems.length;
-    if (techItems.length > 0) {
+    if (detectedTechs.length > 0) {
       techBadgesContainer.innerHTML = '';
-      techItems.forEach(t => {
+      detectedTechs.slice(0, 10).forEach(t => {
         const badge = document.createElement('span');
-        badge.className = 'badge badge-cyan';
+        badge.className = `badge ${t.confidence === 'HIGH' ? 'badge-cyan' : 'badge-neutral'}`;
         badge.textContent = t.name;
+        badge.title = `${t.category} (${t.status}, ${t.confidence} confidence, score: ${t.score}%)`;
         techBadgesContainer.appendChild(badge);
       });
+      if (detectedTechs.length > 10) {
+        const moreBadge = document.createElement('span');
+        moreBadge.className = 'badge badge-neutral';
+        moreBadge.textContent = `+${detectedTechs.length - 10} more`;
+        techBadgesContainer.appendChild(moreBadge);
+      }
     } else {
       techBadgesContainer.innerHTML = '<span class="text-muted" style="font-size:11px;">None detected yet</span>';
     }

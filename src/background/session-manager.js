@@ -55,6 +55,7 @@ export class TabSession {
       libraries: [],
       apis: [],
       websockets: [],
+      browserApis: [],
       performance: {},
       storage: {
         localStorageCount: 0,

@@ -24,6 +24,7 @@
     libraries: [],
     apis: [],
     websockets: [],
+    browserApis: [],
     performance: {},
     storage: {
       localStorageCount: 0,
@@ -38,7 +39,10 @@
       stylesheetsCount: 0,
       imagesCount: 0,
       iframesCount: 0,
+      scripts: [],
+      stylesheets: [],
       metaTags: {},
+      manifest: null,
       frameworkMarkers: []
     }
   };
@@ -52,6 +56,11 @@
     if (type === 'GLOBALS_DETECTED') {
       runtimeState.globals = data;
       dispatchTelemetry();
+    } else if (type === 'BROWSER_API_USED') {
+      if (!runtimeState.browserApis.some(b => b.api === data.api)) {
+        runtimeState.browserApis.push(data);
+        dispatchTelemetry();
+      }
     } else if (type === 'API_REQUEST_START' || type === 'API_REQUEST_FINISH') {
       // Append or update in runtimeState.apis
       if (!runtimeState.apis.some(a => a.url === data.url && a.timestamp === data.timestamp)) {
@@ -78,9 +87,18 @@
 
   // 2. Perform DOM & CSS Inspection
   function analyzeDom() {
-    // Scripts & stylesheets count
+    // Scripts & stylesheets
+    const scriptElements = Array.from(document.querySelectorAll('script[src]'));
     runtimeState.domMetrics.scriptsCount = document.querySelectorAll('script').length;
-    runtimeState.domMetrics.stylesheetsCount = document.querySelectorAll('link[rel="stylesheet"]').length;
+    runtimeState.domMetrics.scripts = scriptElements.map(s => s.src).filter(Boolean).slice(0, 100);
+
+    const linkElements = Array.from(document.querySelectorAll('link[rel="stylesheet"]'));
+    runtimeState.domMetrics.stylesheetsCount = linkElements.length;
+    runtimeState.domMetrics.stylesheets = linkElements.map(l => l.href).filter(Boolean).slice(0, 50);
+
+    const manifestLink = document.querySelector('link[rel="manifest"]');
+    runtimeState.domMetrics.manifest = manifestLink ? manifestLink.href : null;
+
     runtimeState.domMetrics.imagesCount = document.querySelectorAll('img').length;
     runtimeState.domMetrics.iframesCount = document.querySelectorAll('iframe').length;
 
@@ -88,7 +106,7 @@
     const metas = document.querySelectorAll('meta');
     const metaMap = {};
     metas.forEach(m => {
-      const name = m.getAttribute('name') || m.getAttribute('property');
+      const name = m.getAttribute('name') || m.getAttribute('property') || m.getAttribute('http-equiv');
       const content = m.getAttribute('content');
       if (name && content) {
         metaMap[name.toLowerCase()] = content;
@@ -100,11 +118,19 @@
     const markers = [];
     if (document.getElementById('__next')) markers.push({ framework: 'Next.js', marker: '#__next' });
     if (document.getElementById('___gatsby')) markers.push({ framework: 'Gatsby', marker: '#___gatsby' });
-    if (document.getElementById('app') || document.querySelector('[data-v-]')) markers.push({ framework: 'Vue', marker: 'data-v- attribute or #app' });
-    if (document.querySelector('[data-reactroot]')) markers.push({ framework: 'React', marker: '[data-reactroot]' });
+    if (document.getElementById('__nuxt') || document.querySelector('[data-n-head]')) markers.push({ framework: 'Nuxt', marker: '#__nuxt or [data-n-head]' });
+    if (document.getElementById('app') || document.querySelector('[data-v-]')) markers.push({ framework: 'Vue.js', marker: 'data-v- attribute or #app' });
+    if (document.querySelector('[data-reactroot]') || document.querySelector('[data-react-helmet]')) markers.push({ framework: 'React', marker: '[data-reactroot]' });
     if (document.querySelector('[ng-version]')) markers.push({ framework: 'Angular', marker: `ng-version: ${document.querySelector('[ng-version]').getAttribute('ng-version')}` });
+    if (document.querySelector('[ng-app]')) markers.push({ framework: 'AngularJS', marker: '[ng-app]' });
     if (document.querySelector('[class*="svelte-"]')) markers.push({ framework: 'Svelte', marker: 'class="svelte-*"' });
-    if (document.querySelector('[class*="astro-"]')) markers.push({ framework: 'Astro', marker: 'class="astro-*"' });
+    if (document.querySelector('astro-island') || document.querySelector('[class*="astro-"]')) markers.push({ framework: 'Astro', marker: 'astro-island or class="astro-*"' });
+    if (document.querySelector('[x-data]')) markers.push({ framework: 'Alpine.js', marker: '[x-data]' });
+    if (document.querySelector('[hx-get]') || document.querySelector('[hx-post]')) markers.push({ framework: 'HTMX', marker: '[hx-*]' });
+    if (document.querySelector('meta[name="generator"][content*="WordPress"]') || document.querySelector('link[href*="wp-content"]')) markers.push({ framework: 'WordPress', marker: 'WordPress asset/meta' });
+    if (document.querySelector('#shopify-features') || document.querySelector('link[href*="cdn.shopify.com"]')) markers.push({ framework: 'Shopify', marker: 'Shopify asset/marker' });
+    if (document.querySelector('#__VIEWSTATE')) markers.push({ framework: 'ASP.NET', marker: '#__VIEWSTATE' });
+    if (document.querySelector('canvas')) markers.push({ framework: 'HTML5 Canvas', marker: 'canvas element' });
 
     // CSS Class inspections
     const classListSample = Array.from(document.querySelectorAll('[class]')).slice(0, 100).map(el => el.className).join(' ');
@@ -116,6 +142,12 @@
     }
     if (/\b(MuiButton|MuiBox|MuiTypography)\b/.test(classListSample)) {
       markers.push({ framework: 'Material UI (MUI)', marker: 'MUI component class signatures' });
+    }
+    if (/\b(ant-btn|ant-layout|ant-row)\b/.test(classListSample)) {
+      markers.push({ framework: 'Ant Design', marker: 'Ant Design class signatures' });
+    }
+    if (/\b(chakra-button|chakra-stack)\b/.test(classListSample)) {
+      markers.push({ framework: 'Chakra UI', marker: 'Chakra UI class signatures' });
     }
 
     runtimeState.domMetrics.frameworkMarkers = markers;

@@ -70,7 +70,13 @@ chrome.webRequest.onBeforeRequest.addListener(
       startTime: details.timeStamp
     });
 
-    const session = sessionManager.getOrCreate(details.tabId);
+    const isMain = details.type === 'main_frame';
+    const session = sessionManager.getOrCreate(details.tabId, isMain ? details.url : '');
+    if (isMain && details.url) {
+      session.url = details.url;
+      session.primaryDomain = UrlUtils.getHostname(details.url);
+      session.security.isHttps = UrlUtils.isSecure(details.url);
+    }
     session.recordRequest({
       requestId: details.requestId,
       url: details.url,
@@ -114,6 +120,8 @@ chrome.webRequest.onHeadersReceived.addListener(
 
     // If this is the main frame document, inspect security headers
     if (details.type === 'main_frame') {
+      session.url = details.url;
+      session.primaryDomain = UrlUtils.getHostname(details.url);
       session.security.isHttps = UrlUtils.isSecure(details.url);
       session.security.headers = respHeadersObj;
 

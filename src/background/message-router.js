@@ -30,13 +30,20 @@ export class MessageRouter {
         return { success: false, error: 'No tabId provided' };
       }
       let session = await this.sessionManager.getAsync(tabId);
-      if (!session && typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.get) {
+      if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.get) {
         try {
           const tabInfo = await chrome.tabs.get(tabId);
           if (tabInfo && tabInfo.url && !UrlUtils.isInternalOrSpecial(tabInfo.url)) {
-            session = this.sessionManager.getOrCreate(tabId, tabInfo.url);
-            if (tabInfo.title) session.title = tabInfo.title;
-            if (tabInfo.favIconUrl) session.favicon = tabInfo.favIconUrl;
+            if (!session) {
+              session = this.sessionManager.getOrCreate(tabId, tabInfo.url);
+            } else if (!session.url || session.url !== tabInfo.url) {
+              session.url = tabInfo.url;
+              session.primaryDomain = UrlUtils.getHostname(tabInfo.url);
+              session.primaryApex = DomainUtils.getApexDomain(session.primaryDomain);
+              session.security.isHttps = UrlUtils.isSecure(tabInfo.url);
+            }
+            if (tabInfo.title && !session.title) session.title = tabInfo.title;
+            if (tabInfo.favIconUrl && !session.favicon) session.favicon = tabInfo.favIconUrl;
           }
         } catch {}
       }
@@ -61,6 +68,9 @@ export class MessageRouter {
         if (message.payload.websockets) {
           session.runtime.websockets = message.payload.websockets;
           session.stats.websocketCount = message.payload.websockets.length;
+        }
+        if (message.payload.browserApis) {
+          session.runtime.browserApis = message.payload.browserApis;
         }
         if (message.payload.performance) {
           session.runtime.performance = message.payload.performance;

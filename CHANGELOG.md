@@ -4,6 +4,30 @@ All notable changes to the **Underweb** project will be documented in this file.
 
 ---
 
+## [1.1.0] - 2026-09-24
+
+### Fixed
+- **Critical Security Posture Grading Bug**: Resolved issue where multiple HTTPS websites were incorrectly awarded `Grade F (Score: 10/100)` with false "Plaintext Unencrypted HTTP Connection", "Missing CSP", and "Missing HSTS".
+- **Main Document vs Subresource Isolation**: Security analyzer now isolates the main document's transport and response headers from subresource assets, preventing a single passive HTTP image from collapsing the entire site's security score.
+- **Active vs. Passive Mixed Content**: Created dedicated `MixedContentDetector` distinguishing high-risk Active Mixed Content (scripts, stylesheets, XHR/fetch, -8 pts) from Passive Mixed Content (images, audio, video, -2 pts).
+- **Modern Clickjacking Defense Recognition**: `HeaderAnalyzer` now recognizes `Content-Security-Policy: frame-ancestors` (e.g. `'none'`, `'self'`) as complete, superior protection against clickjacking, eliminating false "Missing X-Frame-Options" alerts.
+- **Unobserved Response Headers Mitigation**: Added `PARTIALLY_ASSESSED` state for pre-existing tabs opened prior to extension installation or reload; prevents penalizing sites for unobserved response headers.
+- **Service Worker Lifecycle & Persistence**: Main document URL, primary domain, and HTTPS status now consistently sync to `chrome.storage.session` and survive background service worker sleep/wake events.
+
+### Added
+- **5-Pillar Categorical Security Scoring**:
+  - Transport Security (25 pts)
+  - Defense-in-Depth Headers (30 pts)
+  - Mixed Content (15 pts)
+  - Cookie Hygiene (15 pts)
+  - Origin Isolation (15 pts)
+- **Security Finding Inspector Modal**: Interactive deep-dive modal in the Dashboard displaying affected URL, resource scope (Main Document vs Subresource), party scope (First-Party vs Third-Party), observed evidence, expected security baseline, and actionable remediation guidance.
+- **Category Score Breakdown Pills**: Dashboard now displays per-category score pills (`Transport: 25/25`, `Headers: 30/30`, etc.) and a Main Document Baseline grid.
+- **Automated Regression Test Suite**: Added Suite 16 to `tests/test-runner.js` with comprehensive regression tests validating HTTPS baselines, mixed content differentiation, modern clickjacking detection, and partial assessment handling (126 passing tests).
+- **Open-Source GitHub Architecture Overhaul**: Complete documentation revamp including Mermaid architecture diagram, transparent capability limits, `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`, and GitHub issue/PR templates.
+
+---
+
 ## [1.0.0] - 2026-09-23
 
 ### Added

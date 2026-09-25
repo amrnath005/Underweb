@@ -307,14 +307,31 @@
           <div class="security-layout">
             <div class="security-score-banner">
               <div class="score-circle" id="securityScoreCircle">A</div>
-              <div class="score-info">
-                <h3 id="securityScoreText">Security Posture: Excellent</h3>
-                <p id="securityScoreSubtext">All critical transport encryption and origin isolation mechanisms are active.</p>
+              <div class="score-info" style="flex: 1;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                  <h3 id="securityScoreText" style="margin: 0;">Security Posture: Excellent</h3>
+                  <span id="securityScoreBadge" class="badge badge-emerald" style="font-size: 12px; font-weight: 700;">100 / 100</span>
+                </div>
+                <p id="securityScoreSubtext" style="margin-top: 4px;">All critical transport encryption and origin isolation mechanisms are active.</p>
+                <!-- Category Score Breakdown -->
+                <div id="securityCategoryPills" class="category-pills-row" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px;"></div>
               </div>
             </div>
-            <div class="card">
+
+            <!-- Main Document Security Baseline Summary -->
+            <div class="card" style="margin-top: 12px;">
               <div class="card-header">
-                <span class="card-title">Header Audit Findings</span>
+                <span class="card-title">Main Document Baseline & Telemetry Scope</span>
+                <span id="securityTelemetryStateBadge" class="badge badge-neutral">Assessed</span>
+              </div>
+              <div id="securityBaselineGrid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; padding: 12px;"></div>
+            </div>
+
+            <!-- Findings List -->
+            <div class="card" style="margin-top: 12px;">
+              <div class="card-header">
+                <span class="card-title">Security & Mixed Content Findings</span>
+                <span id="securityFindingsCountBadge" class="badge badge-neutral">0 Findings</span>
               </div>
               <div id="securityFindingsList" class="findings-list"></div>
             </div>
@@ -363,44 +380,6 @@
       </div>
     </div>
   </div>
-
-  <!-- Theme toggle script -->
-  <script>
-    (function() {
-      const saved = localStorage.getItem('uw-theme') || 'light';
-      document.documentElement.setAttribute('data-theme', saved);
-      updateThemeIcon(saved);
-    })();
-
-    function updateThemeIcon(theme) {
-      const icon = document.getElementById('themeIcon');
-      if (!icon) return;
-      if (theme === 'dark') {
-        icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
-      } else {
-        icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
-      }
-    }
-
-    document.addEventListener('DOMContentLoaded', function() {
-      const btn = document.getElementById('themeToggleBtn');
-      if (!btn) return;
-      btn.addEventListener('click', function() {
-        const html = document.documentElement;
-        const current = html.getAttribute('data-theme') || 'light';
-        const next = current === 'light' ? 'dark' : 'light';
-        html.setAttribute('data-theme', next);
-        localStorage.setItem('uw-theme', next);
-        updateThemeIcon(next);
-      });
-
-      const drawer = document.getElementById('nodeInspectorDrawer');
-      const closeDrawer = document.getElementById('closeDrawerBtn');
-      if (closeDrawer && drawer) {
-        closeDrawer.addEventListener('click', () => drawer.classList.remove('visible'));
-      }
-    });
-  </script>
 
   <script type="module" src="dashboard.js"></script>
 </body>

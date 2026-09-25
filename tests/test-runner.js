@@ -19,6 +19,10 @@ import { TabSession, SessionManager } from '../src/background/session-manager.js
 import { createMockSession } from '../src/utils/mock-data.js';
 import { ApiDetector } from '../src/network/api-detector.js';
 import { WebSocketAnalyzer } from '../src/network/websocket-analyzer.js';
+import { FingerprintEngine } from '../src/detection/fingerprint-engine.js';
+import { SecurityAnalyzer } from '../src/security/security-analyzer.js';
+import { MixedContentDetector } from '../src/security/mixed-content.js';
+import { HeaderAnalyzer } from '../src/security/header-analyzer.js';
 
 let passed = 0;
 let failed = 0;
@@ -256,6 +260,464 @@ suite('Phase 3 Expanded ASN Registry & Optional DoH', () => {
 
   // Verify non-blocking graceful return of resolveDoh on empty/offline
   assert(typeof AsnAnalyzer.resolveDoh === 'function', 'resolveDoh is defined as optional method');
+});
+
+// -------------------------------------------------------------
+// 9. Universal Fingerprint Detection Across Vectors
+// -------------------------------------------------------------
+suite('Universal Fingerprint Detection Engine', () => {
+  const session = {
+    url: 'https://app.mysite.com/dashboard',
+    runtime: {
+      globals: [
+        { name: 'React', evidenceKey: 'window.React', version: '18.2.0' },
+        { name: 'Redux', evidenceKey: 'window.__REDUX_DEVTOOLS_EXTENSION__' }
+      ],
+      domMetrics: {
+        frameworkMarkers: [
+          { framework: 'Tailwind CSS', marker: 'Utility class signatures (flex, grid, p-*, text-*)' },
+          { framework: 'React', marker: '[data-reactroot]' }
+        ],
+        scripts: ['https://cdn.example.com/assets/vendor.js'],
+        stylesheets: ['https://cdn.example.com/assets/styles.css'],
+        metaTags: { generator: 'WordPress 6.4' }
+      },
+      browserApis: [
+        { api: 'webgl', detail: 'WebGL 2.0 context created' },
+        { api: 'service-worker', detail: 'Active controller' }
+      ],
+      storage: {
+        localStorageCount: 5,
+        localStorageKeys: ['theme', 'authToken'],
+        indexedDbDatabases: ['offline_store']
+      }
+    },
+    security: {
+      isHttps: true,
+      headers: {
+        'server': 'cloudflare',
+        'cf-ray': '8f7a6b5c4d3e-SJC',
+        'content-security-policy': "default-src 'self'"
+      }
+    },
+    requests: [
+      { url: 'https://app.mysite.com/api/graphql', category: 'API', type: 'fetch' },
+      { url: 'https://www.google-analytics.com/analytics.js', category: 'SCRIPT', type: 'script' }
+    ]
+  };
+
+  const detected = FingerprintEngine.detect(session);
+  const byId = new Map(detected.map(d => [d.id, d]));
+
+  // React via global and DOM
+  assert(byId.has('react'), 'Detects React from globals & DOM markers');
+  const react = byId.get('react');
+  assert(react.status === 'OBSERVED', 'React status is OBSERVED');
+  assert(react.confidence === 'HIGH', 'React confidence is HIGH');
+  assert(react.score >= 80, 'React score >= 80%');
+
+  // Tailwind CSS
+  assert(byId.has('tailwindcss'), 'Detects Tailwind CSS from DOM class utility marker');
+
+  // WebGL hardware acceleration
+  assert(byId.has('webgl'), 'Detects WebGL from intercepted canvas context');
+
+  // IndexedDB
+  assert(byId.has('indexeddb'), 'Detects IndexedDB client storage');
+
+  // GraphQL
+  assert(byId.has('graphql'), 'Detects GraphQL from network request pattern');
+
+  // Cloudflare CDN
+  assert(byId.has('cloudflare'), 'Detects Cloudflare from cf-ray and server headers');
+
+  // Google Analytics
+  assert(byId.has('google-analytics'), 'Detects Google Analytics from script bundle URL');
+
+  // HTTPS Security Protocol
+  assert(byId.has('https'), 'Detects HTTPS transport protocol');
+});
+
+// -------------------------------------------------------------
+// 10. Implied Technology & Role Attribution
+// -------------------------------------------------------------
+suite('Implied Technology & Role Attribution', () => {
+  const nextSession = {
+    url: 'https://nextjs-app.example.com',
+    runtime: {
+      globals: [{ name: 'Next.js', evidenceKey: 'window.__NEXT_DATA__' }],
+      domMetrics: {
+        frameworkMarkers: [{ framework: 'Next.js', marker: '#__next' }]
+      }
+    },
+    security: {
+      isHttps: true,
+      headers: { 'x-powered-by': 'Next.js' }
+    },
+    requests: []
+  };
+
+  const detected = FingerprintEngine.detect(nextSession);
+  const byId = new Map(detected.map(d => [d.id, d]));
+
+  assert(byId.has('nextjs'), 'Next.js directly detected');
+  assert(byId.get('nextjs').role === 'PRIMARY', 'Next.js assigned PRIMARY role');
+
+  // React should be automatically inferred from Next.js parent relationship
+  assert(byId.has('react'), 'React automatically inferred from Next.js parent');
+  const impliedReact = byId.get('react');
+  assert(impliedReact.status === 'INFERRED', 'Implied React has status INFERRED');
+  assert(impliedReact.sources.includes('INFERRED_HEURISTIC'), 'Implied React contains INFERRED_HEURISTIC source');
+});
+
+// -------------------------------------------------------------
+// 11. Subresource Headers & Cookie Evidence Synthesis
+// -------------------------------------------------------------
+suite('Subresource Headers & Cookie Evidence Synthesis', () => {
+  // Scenario: Edge CDN masks main_frame server header, but backend returns Express X-Powered-By on API route
+  const subresourceSession = {
+    url: 'https://masked-origin.com',
+    runtime: {
+      globals: [],
+      domMetrics: {}
+    },
+    security: {
+      isHttps: true,
+      headers: {
+        'server': 'cloudflare',
+        'cf-ray': '12345-IAD'
+      }
+    },
+    requests: [
+      {
+        url: 'https://masked-origin.com/api/v1/users',
+        type: 'fetch',
+        category: 'API',
+        responseHeaders: {
+          'x-powered-by': 'Express',
+          'content-type': 'application/json'
+        }
+      }
+    ]
+  };
+
+  const cookies = [
+    { name: 'connect.sid', value: 's%3Aabc123' },
+    { name: 'csrftoken', value: 'xyz789' }
+  ];
+
+  const detected = FingerprintEngine.detect(subresourceSession, cookies);
+  const byId = new Map(detected.map(d => [d.id, d]));
+
+  assert(byId.has('express'), 'Express detected from subresource API route header');
+  assert(byId.has('django'), 'Django detected from csrftoken cookie');
+});
+
+// -------------------------------------------------------------
+// 12. Safety: No Fabricated Databases or Hidden Infrastructure
+// -------------------------------------------------------------
+suite('Safety: No Fabricated Databases or Hidden Architecture', () => {
+  const genericSession = {
+    url: 'https://simple-blog.com',
+    runtime: {
+      globals: [],
+      domMetrics: {}
+    },
+    security: { isHttps: true, headers: {} },
+    requests: []
+  };
+
+  const detected = FingerprintEngine.detect(genericSession);
+  const byId = new Map(detected.map(d => [d.id, d]));
+
+  // Databases must NEVER be inferred without observable browser evidence
+  assert(!byId.has('postgresql'), 'PostgreSQL is NOT fabricated');
+  assert(!byId.has('mysql'), 'MySQL is NOT fabricated');
+  assert(!byId.has('mongodb'), 'MongoDB is NOT fabricated');
+  assert(!byId.has('redis'), 'Redis is NOT fabricated');
+  assert(!byId.has('docker'), 'Docker is NOT fabricated');
+  assert(!byId.has('kubernetes'), 'Kubernetes is NOT fabricated');
+});
+
+// -------------------------------------------------------------
+// 13. Evidence Duplicate Dampening
+// -------------------------------------------------------------
+suite('Evidence Duplicate Dampening', () => {
+  const record = new EvidenceRecord('react', 'React', 'Frontend Framework');
+  // Add 10 duplicate DOM marker signals
+  for (let i = 0; i < 10; i++) {
+    record.addSignal(EVIDENCE_TYPES.DOM_MARKER, '[data-reactroot]', 'matched', `Instance ${i}`);
+  }
+
+  // The 10 duplicate signals must NOT yield an unfair score; duplicate damping must constrain them
+  assert(record.score < 100, `Score is dampened (${record.score}%), not 100%`);
+  assert(record.signals.length === 10, 'All 10 signals recorded');
+  assert(record.sources.length === 1, 'Only 1 unique source category');
+});
+
+// -------------------------------------------------------------
+// 14. CMS & E-Commerce Telemetry Detection
+// -------------------------------------------------------------
+suite('CMS & E-Commerce Telemetry Detection', () => {
+  const wpSession = {
+    url: 'https://news.wpblog.org',
+    runtime: {
+      globals: [{ name: 'WordPress', evidenceKey: 'window.wp' }],
+      domMetrics: {
+        metaTags: { generator: 'WordPress 6.5.2' },
+        scripts: ['https://news.wpblog.org/wp-content/themes/twentytwentyfour/assets/js/index.js']
+      }
+    },
+    security: { isHttps: true, headers: {} },
+    requests: []
+  };
+
+  const detectedWp = FingerprintEngine.detect(wpSession);
+  const wpById = new Map(detectedWp.map(d => [d.id, d]));
+  assert(wpById.has('wordpress'), 'Detects WordPress from global, meta generator, and script path');
+  assert(wpById.get('wordpress').role === 'PRIMARY', 'WordPress assigned PRIMARY role');
+
+  const shopifySession = {
+    url: 'https://store.brand.com/products/jacket',
+    runtime: {
+      globals: [{ name: 'Shopify', evidenceKey: 'window.Shopify' }],
+      domMetrics: {
+        frameworkMarkers: [{ framework: 'Shopify', marker: 'Shopify asset/marker' }]
+      }
+    },
+    security: { isHttps: true, headers: {} },
+    requests: [
+      { url: 'https://cdn.shopify.com/s/files/1/bundle.js', category: 'SCRIPT', type: 'script' }
+    ]
+  };
+
+  const detectedShopify = FingerprintEngine.detect(shopifySession);
+  const shopifyById = new Map(detectedShopify.map(d => [d.id, d]));
+  assert(shopifyById.has('shopify'), 'Detects Shopify from globals, DOM, and CDN script');
+  assert(shopifyById.get('shopify').role === 'PRIMARY', 'Shopify assigned PRIMARY role');
+});
+
+// -------------------------------------------------------------
+// 15. Complex Multi-Tech Stack Co-existence
+// -------------------------------------------------------------
+suite('Complex Multi-Tech Stack Co-existence', () => {
+  const fullStackSession = {
+    url: 'https://portal.enterprise.io/app',
+    runtime: {
+      globals: [
+        { name: 'React', evidenceKey: 'window.React', version: '18.3.1' },
+        { name: 'Redux', evidenceKey: 'window.__REDUX_DEVTOOLS_EXTENSION__' },
+        { name: 'Axios', evidenceKey: 'window.axios' },
+        { name: 'Three.js', evidenceKey: 'window.THREE' }
+      ],
+      domMetrics: {
+        frameworkMarkers: [
+          { framework: 'Tailwind CSS', marker: 'Utility class signatures (flex, grid, p-*, text-*)' },
+          { framework: 'Material UI (MUI)', marker: 'MUI component class signatures' }
+        ],
+        manifest: 'https://portal.enterprise.io/manifest.json'
+      },
+      browserApis: [
+        { api: 'webgl', detail: 'WebGL 2.0' },
+        { api: 'service-worker', detail: 'Service worker active' }
+      ],
+      storage: {
+        localStorageCount: 12,
+        localStorageKeys: ['user_pref', 'session_cache'],
+        indexedDbDatabases: ['enterprise_db']
+      },
+      websockets: [
+        { url: 'wss://portal.enterprise.io/live', status: 'OPEN' }
+      ]
+    },
+    security: {
+      isHttps: true,
+      headers: {
+        'server': 'cloudflare',
+        'cf-ray': '9922aa11-ORD',
+        'strict-transport-security': 'max-age=31536000; includeSubDomains',
+        'content-security-policy': "default-src 'self'",
+        'x-frame-options': 'DENY'
+      }
+    },
+    requests: [
+      {
+        url: 'https://portal.enterprise.io/api/v2/data',
+        category: 'API',
+        type: 'fetch',
+        responseHeaders: { 'x-powered-by': 'Fastify' }
+      },
+      {
+        url: 'https://www.googletagmanager.com/gtag/js?id=G-12345',
+        category: 'ANALYTICS',
+        type: 'script'
+      }
+    ]
+  };
+
+  const detected = FingerprintEngine.detect(fullStackSession);
+  const byId = new Map(detected.map(d => [d.id, d]));
+
+  // Verify multi-tier detection across all categories
+  assert(byId.has('react'), 'React frontend detected');
+  assert(byId.has('redux'), 'Redux state management detected');
+  assert(byId.has('axios'), 'Axios HTTP client detected');
+  assert(byId.has('threejs'), 'Three.js 3D library detected');
+  assert(byId.has('tailwindcss'), 'Tailwind CSS detected');
+  assert(byId.has('mui'), 'Material UI detected');
+  assert(byId.has('fastify'), 'Fastify backend detected from API subresource header');
+  assert(byId.has('cloudflare'), 'Cloudflare CDN detected');
+  assert(byId.has('google-analytics'), 'Google Analytics detected');
+  assert(byId.has('webgl'), 'WebGL detected');
+  assert(byId.has('websocket'), 'WebSocket API detected');
+  assert(byId.has('indexeddb'), 'IndexedDB detected');
+  assert(byId.has('localstorage'), 'localStorage detected');
+  assert(byId.has('hsts'), 'HSTS security header detected');
+  assert(byId.has('csp'), 'CSP security header detected');
+  assert(byId.has('x-frame-options'), 'X-Frame-Options security header detected');
+
+  // Verify that results are properly sorted with Primary first
+  assert(detected[0].role === 'PRIMARY', 'Top sorted technology is a PRIMARY framework');
+});
+
+// -------------------------------------------------------------
+// 16. Security Analyzer & Evidence-Driven Posture Scoring
+// -------------------------------------------------------------
+suite('Security Analyzer & Evidence-Driven Posture Scoring', () => {
+  // 1. Fully protected HTTPS site
+  const secureSession = {
+    url: 'https://security-first.org/',
+    primaryDomain: 'security-first.org',
+    primaryApex: 'security-first.org',
+    security: {
+      isHttps: true,
+      headers: {
+        'strict-transport-security': 'max-age=31536000; includeSubDomains; preload',
+        'content-security-policy': "default-src 'self'; frame-ancestors 'self'",
+        'x-content-type-options': 'nosniff',
+        'referrer-policy': 'strict-origin-when-cross-origin'
+      }
+    },
+    requests: [
+      { url: 'https://security-first.org/app.js', type: 'script', category: 'SCRIPT' }
+    ]
+  };
+
+  const secureRes = SecurityAnalyzer.analyze(secureSession, []);
+  assert(secureRes.assessmentState === 'ASSESSED', 'HTTPS site is fully ASSESSED');
+  assert(secureRes.grade === 'A', 'Well-configured HTTPS site earns Grade A');
+  assert(secureRes.score >= 90, 'Score is >= 90 (no spurious deductions)');
+  assert(secureRes.summary.transportScore === 25, 'Full transport score of 25/25');
+  assert(secureRes.summary.mixedContentScore === 15, 'Zero mixed content deductions (15/15)');
+
+  // 2. CRITICAL REGRESSION TEST: HTTPS site with a single passive HTTP image must NEVER receive Grade F / 10!
+  const passiveMixedContentSession = {
+    url: 'https://ecommerce-store.com/product/123',
+    primaryDomain: 'ecommerce-store.com',
+    primaryApex: 'ecommerce-store.com',
+    security: {
+      isHttps: true,
+      headers: {
+        'strict-transport-security': 'max-age=15552000; includeSubDomains',
+        'content-security-policy': "default-src 'self' https:; img-src * http: https: data:; frame-ancestors 'none'",
+        'x-content-type-options': 'nosniff'
+      }
+    },
+    requests: [
+      { url: 'https://ecommerce-store.com/bundle.js', type: 'script', category: 'SCRIPT' },
+      { url: 'http://cdn.partner-images.com/banner.jpg', type: 'image', category: 'IMAGE' }
+    ]
+  };
+
+  const passiveRes = SecurityAnalyzer.analyze(passiveMixedContentSession, []);
+  assert(passiveRes.grade !== 'F', 'REGRESSION FIXED: HTTPS site with passive HTTP image is NOT Grade F');
+  assert(passiveRes.score >= 80, 'Score remains solid (>= 80) despite passive HTTP image');
+  assert(passiveRes.summary.transportScore === 25, 'Transport is 25/25 because main document is HTTPS');
+  assert(passiveRes.summary.mixedContentScore === 13, 'Passive mixed content deducts only 2 pts (13/15)');
+  
+  const passiveFinding = passiveRes.findings.find(f => f.category === 'MIXED_CONTENT' || f.category === 'mixed-content');
+  assert(passiveFinding && passiveFinding.severity === 'LOW', 'Passive mixed content is classified with LOW severity');
+  assert(passiveFinding.resourceScope === 'SUBRESOURCE', 'Resource scope is SUBRESOURCE');
+  assert(passiveFinding.partyScope === 'THIRD_PARTY', 'Party scope is correctly tagged THIRD_PARTY');
+
+  // 3. Active mixed content test
+  const activeMixedContentSession = {
+    url: 'https://insecure-subresource.com/',
+    primaryDomain: 'insecure-subresource.com',
+    primaryApex: 'insecure-subresource.com',
+    security: {
+      isHttps: true,
+      headers: {
+        'strict-transport-security': 'max-age=31536000'
+      }
+    },
+    requests: [
+      { url: 'http://compromised-cdn.net/library.js', type: 'script', category: 'SCRIPT' }
+    ]
+  };
+
+  const activeRes = SecurityAnalyzer.analyze(activeMixedContentSession, []);
+  const activeFinding = activeRes.findings.find(f => f.category === 'MIXED_CONTENT' || f.category === 'mixed-content');
+  assert(activeFinding && activeFinding.severity === 'HIGH', 'Active mixed content (script) is flagged with HIGH severity');
+  assert(activeFinding.scoreDeduction === 8, 'Active mixed content incurs an 8 pt penalty');
+
+  // 4. Clickjacking: modern CSP frame-ancestors fulfills defense without X-Frame-Options
+  const cspClickjackingSession = {
+    url: 'https://modern-app.io/',
+    primaryDomain: 'modern-app.io',
+    primaryApex: 'modern-app.io',
+    security: {
+      isHttps: true,
+      headers: {
+        'content-security-policy': "frame-ancestors 'none'"
+        // No x-frame-options!
+      }
+    },
+    requests: []
+  };
+
+  const clickjackingAnalysis = HeaderAnalyzer.analyze(cspClickjackingSession.security.headers, true);
+  assert(clickjackingAnalysis.clickjacking.protected === true, 'CSP frame-ancestors provides clickjacking protection');
+  assert(clickjackingAnalysis.clickjacking.mechanism.includes('CSP frame-ancestors'), 'Correctly identifies mechanism as CSP frame-ancestors');
+  
+  const cspCjRes = SecurityAnalyzer.analyze(cspClickjackingSession, []);
+  const xfoFinding = cspCjRes.findings.find(f => f.id === 'MISSING_CLICKJACKING_DEFENSE');
+  assert(!xfoFinding, 'No false Missing X-Frame-Options finding when CSP frame-ancestors is present');
+
+  // 5. Unobserved headers (tab opened before extension)
+  const unobservedHeadersSession = {
+    url: 'https://pre-existing-tab.com/dashboard',
+    primaryDomain: 'pre-existing-tab.com',
+    primaryApex: 'pre-existing-tab.com',
+    security: {
+      isHttps: true,
+      headers: {} // Empty because tab opened before listener was bound
+    },
+    requests: []
+  };
+
+  const partialRes = SecurityAnalyzer.analyze(unobservedHeadersSession, []);
+  assert(partialRes.assessmentState === 'PARTIALLY_ASSESSED', 'Correctly marked as PARTIALLY_ASSESSED');
+  assert(partialRes.grade !== 'F', 'Unobserved headers tab is NOT penalized to Grade F');
+  assert(partialRes.summary.headerScore === 30, 'Unobserved headers are not falsely deducted (30/30 preserved)');
+
+  // 6. Plaintext HTTP main document
+  const plaintextSession = {
+    url: 'http://legacy-plaintext-web.org/',
+    primaryDomain: 'legacy-plaintext-web.org',
+    primaryApex: 'legacy-plaintext-web.org',
+    security: {
+      isHttps: false,
+      headers: {}
+    },
+    requests: []
+  };
+
+  const plaintextRes = SecurityAnalyzer.analyze(plaintextSession, []);
+  assert(plaintextRes.summary.transportScore === 0, 'Plaintext HTTP main document receives 0/25 transport score');
+  const criticalPlaintext = plaintextRes.findings.find(f => f.id === 'PLAINTEXT_HTTP');
+  assert(criticalPlaintext && criticalPlaintext.severity === 'CRITICAL', 'Flags CRITICAL Plaintext Unencrypted HTTP Connection');
+  assert(criticalPlaintext.resourceScope === 'MAIN_DOCUMENT', 'Flags main document as plaintext');
 });
 
 // -------------------------------------------------------------

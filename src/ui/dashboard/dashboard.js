@@ -1,5 +1,8 @@
-// src/ui/dashboard/dashboard.js
-// Master controller for the Underweb Deep Intelligence Dashboard.
+// Apply saved theme immediately
+(function initTheme() {
+  const saved = localStorage.getItem('uw-theme') || 'light';
+  document.documentElement.setAttribute('data-theme', saved);
+})();
 
 import { FingerprintEngine } from '../../detection/fingerprint-engine.js';
 import { CdnDetector } from '../../infrastructure/cdn-detector.js';
@@ -156,11 +159,40 @@ function setupNavigation() {
   });
 }
 
+function updateThemeIcon(theme) {
+  const icon = document.getElementById('themeIcon');
+  if (!icon) return;
+  if (theme === 'dark') {
+    icon.innerHTML = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>';
+  } else {
+    icon.innerHTML = '<circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>';
+  }
+}
+
 function setupActions() {
   const addListener = (id, evt, fn) => {
     const el = document.getElementById(id);
     if (el) el.addEventListener(evt, fn);
   };
+
+  const themeBtn = document.getElementById('themeToggleBtn');
+  if (themeBtn) {
+    updateThemeIcon(document.documentElement.getAttribute('data-theme') || 'light');
+    themeBtn.addEventListener('click', () => {
+      const html = document.documentElement;
+      const current = html.getAttribute('data-theme') || 'light';
+      const next = current === 'light' ? 'dark' : 'light';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('uw-theme', next);
+      updateThemeIcon(next);
+    });
+  }
+
+  const drawer = document.getElementById('nodeInspectorDrawer');
+  const closeDrawer = document.getElementById('closeDrawerBtn');
+  if (closeDrawer && drawer) {
+    closeDrawer.addEventListener('click', () => drawer.classList.remove('visible'));
+  }
 
   addListener('refreshBtn', 'click', async () => {
     if (typeof chrome !== 'undefined' && chrome.tabs && chrome.tabs.reload && currentTabId) {
@@ -230,6 +262,20 @@ function setupActions() {
   addListener('closeModalBtn', 'click', () => {
     const modal = document.getElementById('evidenceModal');
     if (modal) modal.classList.remove('active');
+  });
+
+  const modalEl = document.getElementById('evidenceModal');
+  if (modalEl) {
+    modalEl.addEventListener('click', (e) => {
+      if (e.target === modalEl) modalEl.classList.remove('active');
+    });
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      const modal = document.getElementById('evidenceModal');
+      if (modal) modal.classList.remove('active');
+    }
   });
 
   // Investigator Controls
@@ -377,6 +423,10 @@ async function loadSessionData() {
 
   // 10. Render Privacy & Security
   const handleCookies = (cookies) => {
+    if (cookies && cookies.length > 0) {
+      detectedTechs = FingerprintEngine.detect(currentSession, cookies);
+      renderStackTab();
+    }
     renderPrivacyTab(cookies || []);
     renderSecurityTab(cookies || []);
   };
@@ -480,6 +530,11 @@ function renderInferredArchitecture(arch) {
   }
 }
 
+function escapeHtml(str) {
+  if (typeof str !== 'string') return String(str ?? '');
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
 function renderStackTab() {
   const container = document.getElementById('techStackGrid');
   container.innerHTML = '';
@@ -492,15 +547,25 @@ function renderStackTab() {
   detectedTechs.forEach(tech => {
     const card = document.createElement('div');
     card.className = 'tech-card';
+    const confClass = tech.confidence === 'HIGH' ? 'badge-green' : (tech.confidence === 'MEDIUM' ? 'badge-amber' : 'badge-neutral');
+    const statusClass = tech.status === 'OBSERVED' ? 'badge-green' : 'badge-cyan';
+    const roleBadge = tech.role ? `<span class="badge badge-neutral" style="font-size:10px;">${escapeHtml(tech.role)}</span>` : '';
+
     card.innerHTML = `
       <div class="tech-card-header">
-        <span class="tech-card-name">${tech.name}</span>
-        <span class="badge ${tech.confidence === 'HIGH' ? 'badge-green' : 'badge-amber'}">${tech.confidence}</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span class="tech-card-name">${escapeHtml(tech.name)}</span>
+          ${roleBadge}
+        </div>
+        <div style="display: flex; gap: 4px;">
+          <span class="badge ${statusClass}">${escapeHtml(tech.status)}</span>
+          <span class="badge ${confClass}">${escapeHtml(tech.confidence)} (${tech.score}%)</span>
+        </div>
       </div>
-      <div class="tech-card-desc">${tech.explanation}</div>
+      <div class="tech-card-desc">${escapeHtml(tech.explanation)}</div>
       <div class="tech-card-footer">
-        <span class="badge badge-neutral">${tech.category}</span>
-        <span class="confidence">View evidence &rarr;</span>
+        <span class="badge badge-neutral">${escapeHtml(tech.category)}</span>
+        <span class="confidence">${tech.signals.length} signal${tech.signals.length > 1 ? 's' : ''} &bull; View evidence &rarr;</span>
       </div>
     `;
 
@@ -512,14 +577,32 @@ function renderStackTab() {
 function showEvidenceModal(tech) {
   document.getElementById('modalTechTitle').textContent = `${tech.name} — Evidence & Signals`;
   const body = document.getElementById('modalBody');
+  const confClass = tech.confidence === 'HIGH' ? 'badge-green' : (tech.confidence === 'MEDIUM' ? 'badge-amber' : 'badge-neutral');
+  const statusClass = tech.status === 'OBSERVED' ? 'badge-green' : 'badge-cyan';
+
   body.innerHTML = `
-    <div><strong>Category:</strong> ${tech.category}</div>
-    <div><strong>Status:</strong> ${tech.status} (Confidence: ${tech.confidence}, Score: ${tech.score})</div>
-    <div><strong>Explanation:</strong> ${tech.explanation}</div>
-    <div style="margin-top: 10px;"><strong>Observed Signals (${tech.signals.length}):</strong></div>
-    <ul class="signals-list" style="margin-top: 6px;">
-      ${tech.signals.map(s => `<li><code>[${s.type}]</code> <strong>${s.key}:</strong> ${s.description}</li>`).join('')}
-    </ul>
+    <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; align-items: center;">
+      <span class="badge ${statusClass}">${escapeHtml(tech.status)}</span>
+      <span class="badge ${confClass}">${escapeHtml(tech.confidence)} Confidence</span>
+      <span class="badge badge-neutral">Score: ${tech.score}%</span>
+      <span class="badge badge-neutral">${escapeHtml(tech.category)}</span>
+      ${tech.role ? `<span class="badge badge-neutral">Role: ${escapeHtml(tech.role)}</span>` : ''}
+    </div>
+    ${tech.description ? `<p style="font-size: 13px; color: var(--color-text-secondary); margin-bottom: 10px;">${escapeHtml(tech.description)}</p>` : ''}
+    ${tech.website ? `<div style="margin-bottom: 12px; font-size: 12px;"><a href="${escapeHtml(tech.website)}" target="_blank" rel="noopener" style="color: var(--color-primary); text-decoration: underline;">Official Documentation &rarr;</a></div>` : ''}
+    <div style="margin-top: 14px; font-weight: 600; font-size: 13px;">Observed Evidence (${tech.signals.length} signal${tech.signals.length > 1 ? 's' : ''}):</div>
+    <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 8px;">
+      ${tech.signals.map(s => `
+        <div style="padding: 8px 12px; background: var(--color-bg-secondary); border-radius: 6px; font-size: 12px; border: 1px solid var(--color-border);">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+            <code>[${escapeHtml(s.type)}]</code>
+            <span class="badge ${s.strength === 'HIGH' ? 'badge-green' : (s.strength === 'MEDIUM' ? 'badge-amber' : 'badge-neutral')}" style="font-size: 10px;">${escapeHtml(s.strength || 'SIGNAL')}</span>
+          </div>
+          <div style="color: var(--color-text-primary); font-weight: 500;">${escapeHtml(s.description)}</div>
+          <div style="font-size: 11px; color: var(--color-text-muted); margin-top: 2px;">Source: ${escapeHtml(s.source || 'browser telemetry')} &bull; Key: <code>${escapeHtml(s.key)}</code></div>
+        </div>
+      `).join('')}
+    </div>
   `;
   document.getElementById('evidenceModal').classList.add('active');
 }
@@ -652,32 +735,222 @@ function renderPrivacyTab(cookies) {
 
 function renderSecurityTab(cookies) {
   const sec = SecurityAnalyzer.analyze(currentSession, cookies);
+
+  // 1. Grade circle
   const circle = document.getElementById('securityScoreCircle');
   if (circle) {
     circle.textContent = sec.grade;
-    circle.className = `score-circle ${sec.grade === 'A' ? 'border-emerald' : 'border-amber'}`;
+    let borderClass = 'border-emerald';
+    if (sec.grade === 'B') borderClass = 'border-cyan';
+    else if (sec.grade === 'C' || sec.grade === 'D') borderClass = 'border-amber';
+    else if (sec.grade === 'F') borderClass = 'border-rose';
+    circle.className = `score-circle ${borderClass}`;
   }
 
+  // 2. Score text & badge
   const scoreText = document.getElementById('securityScoreText');
-  if (scoreText) scoreText.textContent = `Security Posture: Grade ${sec.grade} (Score: ${sec.score}/100)`;
+  if (scoreText) scoreText.textContent = `Security Posture: Grade ${sec.grade}`;
+
+  const scoreBadge = document.getElementById('securityScoreBadge');
+  if (scoreBadge) {
+    scoreBadge.textContent = `${sec.score} / 100`;
+    let badgeClass = 'badge-emerald';
+    if (sec.score < 50) badgeClass = 'badge-rose';
+    else if (sec.score < 70) badgeClass = 'badge-amber';
+    else if (sec.score < 85) badgeClass = 'badge-cyan';
+    scoreBadge.className = `badge ${badgeClass}`;
+  }
+
+  // 3. Subtext
+  const subtext = document.getElementById('securityScoreSubtext');
+  if (subtext) {
+    if (sec.assessmentState === 'INSUFFICIENT_EVIDENCE') {
+      subtext.textContent = 'Insufficient telemetry: Main document headers have not been observed yet. Refresh the target tab to capture response headers.';
+    } else if (sec.assessmentState === 'PARTIALLY_ASSESSED') {
+      subtext.textContent = 'Partially assessed: Main document response headers were not observed in this session (e.g. tab opened before extension loaded). Evaluated observable transport and subresources without unobserved header deductions.';
+    } else if (sec.score >= 85) {
+      subtext.textContent = 'Verified transport encryption and active origin defense policies.';
+    } else if (sec.score >= 70) {
+      subtext.textContent = 'Core transport security verified with minor policy recommendations.';
+    } else {
+      subtext.textContent = 'Attention needed: Security policies or transport protections require remediation.';
+    }
+  }
+
+  // 4. Category score breakdown pills
+  const pillsContainer = document.getElementById('securityCategoryPills');
+  if (pillsContainer && sec.summary) {
+    const s = sec.summary;
+    const categories = [
+      { name: 'Transport', score: s.transportScore, max: 25 },
+      { name: 'Headers', score: s.headerScore, max: 30 },
+      { name: 'Mixed Content', score: s.mixedContentScore, max: 15 },
+      { name: 'Cookies', score: s.cookieScore, max: 15 },
+      { name: 'Isolation', score: s.isolationScore, max: 15 }
+    ];
+    pillsContainer.innerHTML = categories.map(cat => {
+      const pct = cat.score / cat.max;
+      const bColor = pct >= 0.85 ? 'badge-emerald' : pct >= 0.6 ? 'badge-cyan' : pct >= 0.4 ? 'badge-amber' : 'badge-rose';
+      return `<span class="badge ${bColor}" style="font-size: 11px; padding: 3px 8px;">${cat.name}: <strong>${cat.score}/${cat.max}</strong></span>`;
+    }).join('');
+  }
+
+  // 5. Overview Tab Grade
   const ovGrade = document.getElementById('ovSecurityGrade');
   if (ovGrade) ovGrade.textContent = sec.grade;
 
+  // 6. Telemetry State Badge
+  const stateBadge = document.getElementById('securityTelemetryStateBadge');
+  if (stateBadge) {
+    stateBadge.textContent = sec.assessmentState;
+    stateBadge.className = `badge ${sec.assessmentState === 'ASSESSED' ? 'badge-emerald' : sec.assessmentState === 'PARTIALLY_ASSESSED' ? 'badge-amber' : 'badge-neutral'}`;
+  }
+
+  // 7. Main Document Baseline Grid
+  const baselineGrid = document.getElementById('securityBaselineGrid');
+  if (baselineGrid && sec.baseline) {
+    const b = sec.baseline;
+    const isPartial = sec.assessmentState === 'PARTIALLY_ASSESSED';
+    baselineGrid.innerHTML = `
+      <div class="baseline-card ${b.isHttps ? 'pass' : 'fail'}">
+        <span class="baseline-card-title">Transport Scheme</span>
+        <span class="baseline-card-value">${b.isHttps ? 'HTTPS (Encrypted)' : 'HTTP (Plaintext)'}</span>
+      </div>
+      <div class="baseline-card ${b.cspActive ? 'pass' : (isPartial ? 'warning' : 'fail')}">
+        <span class="baseline-card-title">Content Security Policy</span>
+        <span class="baseline-card-value">${b.cspActive ? 'Enforced' : (isPartial ? 'Unobserved' : 'Not Configured')}</span>
+      </div>
+      <div class="baseline-card ${b.hstsActive ? 'pass' : (isPartial ? 'warning' : (b.isHttps ? 'fail' : 'warning'))}">
+        <span class="baseline-card-title">HSTS (Transport Strictness)</span>
+        <span class="baseline-card-value">${b.hstsActive ? 'Active' : (isPartial ? 'Unobserved' : (b.isHttps ? 'Missing' : 'N/A'))}</span>
+      </div>
+      <div class="baseline-card ${b.clickjackingProtected ? 'pass' : (isPartial ? 'warning' : 'fail')}">
+        <span class="baseline-card-title">Clickjacking Defense</span>
+        <span class="baseline-card-value">${b.clickjackingProtected ? 'Protected (CSP/XFO)' : (isPartial ? 'Unobserved' : 'Missing')}</span>
+      </div>
+      <div class="baseline-card ${b.nosniffActive ? 'pass' : (isPartial ? 'warning' : 'fail')}">
+        <span class="baseline-card-title">MIME Sniffing (XCTO)</span>
+        <span class="baseline-card-value">${b.nosniffActive ? 'nosniff Active' : (isPartial ? 'Unobserved' : 'Missing')}</span>
+      </div>
+      <div class="baseline-card ${b.referrerPolicyActive ? 'pass' : 'warning'}">
+        <span class="baseline-card-title">Referrer Policy</span>
+        <span class="baseline-card-value">${b.referrerPolicyActive || (isPartial ? 'Unobserved' : 'Browser Default')}</span>
+      </div>
+    `;
+  }
+
+  // 8. Findings Count Badge
+  const findingsBadge = document.getElementById('securityFindingsCountBadge');
+  if (findingsBadge) {
+    findingsBadge.textContent = `${sec.findings.length} Finding${sec.findings.length === 1 ? '' : 's'}`;
+    findingsBadge.className = `badge ${sec.findings.length === 0 ? 'badge-emerald' : 'badge-neutral'}`;
+  }
+
+  // 9. Findings List & Click-to-Inspect
   const findingsList = document.getElementById('securityFindingsList');
   if (findingsList) {
     findingsList.innerHTML = '';
-    sec.findings.forEach(f => {
-      findingsList.innerHTML += `
-        <div class="finding-item">
+    if (sec.findings.length === 0) {
+      findingsList.innerHTML = '<div class="empty-state" style="padding: 24px;">No security vulnerabilities or mixed-content risks detected for this session.</div>';
+    } else {
+      sec.findings.forEach(f => {
+        const item = document.createElement('div');
+        item.className = 'finding-item';
+
+        let sevBadge = 'badge-amber';
+        if (f.severity === 'CRITICAL' || f.severity === 'HIGH') sevBadge = 'badge-rose';
+        else if (f.severity === 'LOW') sevBadge = 'badge-cyan';
+        else if (f.severity === 'INFO') sevBadge = 'badge-neutral';
+
+        item.innerHTML = `
           <div class="finding-header">
-            <span class="finding-title">${f.title}</span>
-            <span class="badge ${f.severity === 'HIGH' || f.severity === 'CRITICAL' ? 'badge-rose' : 'badge-amber'}">${f.severity}</span>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="finding-title">${f.title}</span>
+              <span class="badge ${sevBadge}">${f.severity}</span>
+              <span class="badge badge-slate" style="font-size: 10px;">${f.category}</span>
+              ${f.scoreDeduction > 0 ? `<span class="badge badge-rose" style="font-size: 10px;">-${f.scoreDeduction} pts</span>` : ''}
+            </div>
+            <span style="font-size: 11px; color: var(--accent); font-family: var(--font-mono);">Inspect &rarr;</span>
           </div>
           <div class="finding-desc">${f.description}</div>
-        </div>
-      `;
-    });
+          <div style="display: flex; gap: 12px; font-size: 10.5px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 4px;">
+            <span>Scope: ${f.resourceScope || 'MAIN_DOCUMENT'}</span>
+            <span>Party: ${f.partyScope || 'FIRST_PARTY'}</span>
+            ${f.resourceType ? `<span>Type: ${f.resourceType}</span>` : ''}
+          </div>
+        `;
+        item.addEventListener('click', () => showFindingModal(f));
+        findingsList.appendChild(item);
+      });
+    }
   }
+}
+
+function showFindingModal(f) {
+  const modal = document.getElementById('evidenceModal');
+  const title = document.getElementById('modalTechTitle');
+  const body = document.getElementById('modalBody');
+  if (!modal || !title || !body) return;
+
+  title.textContent = `Security Finding: ${f.title}`;
+
+  let sevBadge = 'badge-amber';
+  if (f.severity === 'CRITICAL' || f.severity === 'HIGH') sevBadge = 'badge-rose';
+  else if (f.severity === 'LOW') sevBadge = 'badge-cyan';
+  else if (f.severity === 'INFO') sevBadge = 'badge-neutral';
+
+  body.innerHTML = `
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span class="badge ${sevBadge}" style="font-size: 12px; font-weight: 700; padding: 4px 10px;">${f.severity}</span>
+        <span class="badge badge-slate" style="font-size: 12px; padding: 4px 10px;">Category: ${f.category}</span>
+        <span class="badge badge-cyan" style="font-size: 12px; padding: 4px 10px;">Scope: ${f.resourceScope || 'MAIN_DOCUMENT'}</span>
+        <span class="badge badge-neutral" style="font-size: 12px; padding: 4px 10px;">Party: ${f.partyScope || 'FIRST_PARTY'}</span>
+        ${f.scoreDeduction > 0 ? `<span class="badge badge-rose" style="font-size: 12px; padding: 4px 10px;">Score Impact: -${f.scoreDeduction} pts</span>` : '<span class="badge badge-emerald" style="font-size: 12px; padding: 4px 10px;">No score penalty</span>'}
+      </div>
+
+      <div>
+        <div class="finding-field-label">Affected URL / Resource</div>
+        <div class="finding-field-value">${f.affectedUrl || 'Main Document URL'}</div>
+      </div>
+
+      ${f.resourceType ? `
+        <div>
+          <div class="finding-field-label">Resource Type</div>
+          <div class="finding-field-value">${f.resourceType}</div>
+        </div>
+      ` : ''}
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <div>
+          <div class="finding-field-label">Observed Evidence</div>
+          <div class="finding-field-value" style="color: #f43f5e;">${f.observed || 'None'}</div>
+        </div>
+        <div>
+          <div class="finding-field-label">Expected Security Baseline</div>
+          <div class="finding-field-value" style="color: #10b981;">${f.expected || 'Active'}</div>
+        </div>
+      </div>
+
+      <div>
+        <div class="finding-field-label">Technical Details & Risk Assessment</div>
+        <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.5; background: var(--bg-muted); padding: 10px; border-radius: 4px;">
+          ${f.description}
+        </div>
+      </div>
+
+      ${f.remediation ? `
+        <div>
+          <div class="finding-field-label">Recommended Remediation</div>
+          <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 10px; border-radius: 4px;">
+            ${f.remediation}
+          </div>
+        </div>
+      ` : ''}
+    </div>
+  `;
+
+  modal.classList.add('active');
 }
 
 function renderApisTab() {
