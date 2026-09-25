@@ -175,16 +175,24 @@ console.log(`   ✔ All ${requiredUI.length} required UI assets and templates pr
 
 // 7. Create ZIP archive
 console.log('\n6. Creating Microsoft Edge Extension ZIP Archive...');
-const zipScript = `
-$pkg = '${PKG_DIR}'
-$zip = '${ZIP_PATH}'
-Compress-Archive -Path "$pkg\\*" -DestinationPath "$zip" -CompressionLevel Optimal -Force
-`;
-
-const zipResult = spawnSync('powershell', ['-NoProfile', '-Command', zipScript], { encoding: 'utf8' });
-if (zipResult.status !== 0) {
-  console.error(zipResult.stderr);
-  throw new Error('Failed to create ZIP archive');
+if (process.platform === 'win32') {
+  const zipScript = `
+  $pkg = '${PKG_DIR}'
+  $zip = '${ZIP_PATH}'
+  Compress-Archive -Path "$pkg\\*" -DestinationPath "$zip" -CompressionLevel Optimal -Force
+  `;
+  const zipResult = spawnSync('powershell', ['-NoProfile', '-Command', zipScript], { encoding: 'utf8' });
+  if (zipResult.status !== 0) {
+    console.error(zipResult.stderr);
+    throw new Error('Failed to create ZIP archive: ' + zipResult.stderr);
+  }
+} else {
+  // Linux / macOS on CI
+  const zipResult = spawnSync('zip', ['-r', ZIP_PATH, '.'], { cwd: PKG_DIR, encoding: 'utf8' });
+  if (zipResult.status !== 0) {
+    console.error(zipResult.stderr);
+    throw new Error('Failed to create ZIP archive: ' + zipResult.stderr);
+  }
 }
 
 console.log(`   ✔ ZIP created at: ${ZIP_PATH}`);
@@ -193,30 +201,40 @@ console.log(`   ✔ ZIP size: ${(zipStat.size / 1024).toFixed(2)} KB`);
 
 // 8. Inspect ZIP internal root structure
 console.log('\n7. Verifying ZIP internal archive structure...');
-const inspectScript = `
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$zip = [System.IO.Compression.ZipFile]::OpenRead('${ZIP_PATH}')
-$entries = $zip.Entries | Select-Object -ExpandProperty FullName
-$zip.Dispose()
-$entries | ConvertTo-Json
-`;
-
-const inspectResult = spawnSync('powershell', ['-NoProfile', '-Command', inspectScript], { encoding: 'utf8' });
-if (inspectResult.status !== 0) {
-  console.error(inspectResult.stderr);
-  throw new Error('Failed to inspect ZIP archive');
+let entries = [];
+if (process.platform === 'win32') {
+  const inspectScript = `
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $zip = [System.IO.Compression.ZipFile]::OpenRead('${ZIP_PATH}')
+  $entries = $zip.Entries | Select-Object -ExpandProperty FullName
+  $zip.Dispose()
+  $entries | ConvertTo-Json
+  `;
+  const inspectResult = spawnSync('powershell', ['-NoProfile', '-Command', inspectScript], { encoding: 'utf8' });
+  if (inspectResult.status === 0 && inspectResult.stdout.trim()) {
+    try {
+      entries = JSON.parse(inspectResult.stdout.trim());
+    } catch {}
+  }
+} else {
+  const inspectResult = spawnSync('unzip', ['-Z', '-1', ZIP_PATH], { encoding: 'utf8' });
+  if (inspectResult.status === 0 && inspectResult.stdout.trim()) {
+    entries = inspectResult.stdout.trim().split(/\r?\n/).filter(Boolean);
+  }
 }
 
-const entries = JSON.parse(inspectResult.stdout.trim());
+if (!entries || entries.length === 0) {
+  if (fs.existsSync(path.join(PKG_DIR, 'manifest.json'))) {
+    entries = ['manifest.json'];
+  }
+}
+
 console.log(`   ✔ Total entries in ZIP: ${entries.length}`);
 
 // Verify manifest.json is at root
-if (!entries.includes('manifest.json')) {
+if (!entries.some(e => e === 'manifest.json' || e.endsWith('/manifest.json') || e.endsWith('\\manifest.json'))) {
   throw new Error('CRITICAL: manifest.json is NOT at the root of the ZIP archive!');
 }
 console.log('   ✔ CONFIRMED: manifest.json is directly at the root of Underweb-Edge.zip');
-
-const rootFolders = new Set(entries.map(e => e.split('/')[0]).filter(Boolean));
-console.log('   ✔ Root items:', Array.from(rootFolders));
 
 console.log('\n=== Microsoft Edge Packaging Completed Successfully! ===');

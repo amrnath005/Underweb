@@ -32,3 +32,6 @@ jobs:
 
       - name: Verify Microsoft Edge Production Packaging
         run: node scripts/build-edge-package.js
+
+      - name: Verify Mozilla Firefox Production Packaging
+        run: node scripts/build-firefox-package.js
