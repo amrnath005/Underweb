@@ -4,6 +4,7 @@
 import { SessionManager } from './session-manager.js';
 import { MessageRouter } from './message-router.js';
 import { UrlUtils } from '../utils/url-utils.js';
+import { DomainUtils } from '../utils/domain-utils.js';
 import { Parsers } from '../utils/parsers.js';
 import { Logger } from '../utils/logger.js';
 
@@ -70,11 +71,19 @@ chrome.webRequest.onBeforeRequest.addListener(
       startTime: details.timeStamp
     });
 
-    const isMain = details.type === 'main_frame';
+    const isMain = details.type === 'main_frame' && (details.frameId === 0 || details.frameId === undefined);
+    if (isMain && details.url) {
+      const existing = sessionManager.get(details.tabId);
+      if (existing && existing.url && existing.url !== details.url) {
+        sessionManager.resetTab(details.tabId, details.url);
+      }
+    }
+
     const session = sessionManager.getOrCreate(details.tabId, isMain ? details.url : '');
     if (isMain && details.url) {
       session.url = details.url;
       session.primaryDomain = UrlUtils.getHostname(details.url);
+      session.primaryApex = DomainUtils.getApexDomain(session.primaryDomain);
       session.security.isHttps = UrlUtils.isSecure(details.url);
     }
     session.recordRequest({
@@ -207,15 +216,23 @@ chrome.webRequest.onErrorOccurred.addListener(
 
 // Track Tab URL updates
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.url) {
-    if (!UrlUtils.isInternalOrSpecial(changeInfo.url)) {
+  if (changeInfo.url && !UrlUtils.isInternalOrSpecial(changeInfo.url)) {
+    const existing = sessionManager.get(tabId);
+    // ONLY reset if this is a genuinely different URL, never if it matches current session
+    if (existing && existing.url && existing.url !== changeInfo.url) {
       sessionManager.resetTab(tabId, changeInfo.url);
     }
   }
   if (tab && tab.url && !UrlUtils.isInternalOrSpecial(tab.url)) {
     const session = sessionManager.getOrCreate(tabId, tab.url);
-    if (tab.title) session.title = tab.title;
-    if (tab.favIconUrl) session.favicon = tab.favIconUrl;
+    if (!session.url) {
+      session.url = tab.url;
+      session.primaryDomain = UrlUtils.getHostname(tab.url);
+      session.primaryApex = DomainUtils.getApexDomain(session.primaryDomain);
+      session.security.isHttps = UrlUtils.isSecure(tab.url);
+    }
+    if (tab.title && !session.title) session.title = tab.title;
+    if (tab.favIconUrl && !session.favicon) session.favicon = tab.favIconUrl;
   }
 });
 

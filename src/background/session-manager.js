@@ -70,7 +70,7 @@ export class TabSession {
 
     // Security Audit Records
     this.security = {
-      isHttps: false,
+      isHttps: initialUrl ? UrlUtils.isSecure(initialUrl) : false,
       headers: {},
       csp: null,
       hsts: null,

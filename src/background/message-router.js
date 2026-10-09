@@ -3,6 +3,7 @@
 
 import { Logger } from '../utils/logger.js';
 import { UrlUtils } from '../utils/url-utils.js';
+import { DomainUtils } from '../utils/domain-utils.js';
 
 const logger = new Logger('MessageRouter');
 
@@ -59,7 +60,21 @@ export class MessageRouter {
       if (!tabId) return { success: false };
 
       const session = await this.sessionManager.getOrCreateAsync(tabId, message.url || (sender.tab && sender.tab.url));
+      if (message.url && (!session.url || !session.primaryDomain)) {
+        session.url = message.url;
+        session.primaryDomain = UrlUtils.getHostname(message.url);
+        session.primaryApex = DomainUtils.getApexDomain(session.primaryDomain);
+        session.security.isHttps = UrlUtils.isSecure(message.url);
+      }
+
       if (message.payload) {
+        // Ingest performance-harvested resources if webRequest was not active during initial page load
+        if (Array.isArray(message.payload.harvestedResources) && session.requests.length === 0) {
+          for (const res of message.payload.harvestedResources) {
+            session.recordRequest(res);
+          }
+        }
+
         // Merge runtime data
         if (message.payload.globals) session.runtime.globals = message.payload.globals;
         if (message.payload.frameworks) session.runtime.frameworks = message.payload.frameworks;

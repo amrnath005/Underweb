@@ -217,6 +217,43 @@
             decodedBodySize: nav.decodedBodySize || 0
           };
         }
+
+        // Harvest all network resources loaded by the browser (Resource Timing API)
+        const resourceEntries = window.performance.getEntriesByType('resource');
+        const harvested = [];
+
+        if (navEntries && navEntries.length > 0) {
+          const nav = navEntries[0];
+          harvested.push({
+            requestId: `nav_main_${window.location.href}`,
+            url: window.location.href,
+            method: 'GET',
+            type: 'main_frame',
+            protocol: nav.nextHopProtocol || '',
+            size: nav.transferSize || 0,
+            duration: Math.max(0, Math.round(nav.responseEnd - nav.startTime)),
+            status: 200,
+            timeStamp: Math.round(performance.timeOrigin || Date.now())
+          });
+        }
+
+        if (resourceEntries && resourceEntries.length > 0) {
+          for (const res of resourceEntries.slice(0, 200)) {
+            if (!res.name || res.name.startsWith('data:') || res.name.startsWith('blob:')) continue;
+            harvested.push({
+              requestId: `res_${res.name}_${Math.round(res.startTime)}`,
+              url: res.name,
+              method: 'GET',
+              type: res.initiatorType || 'other',
+              protocol: res.nextHopProtocol || '',
+              size: res.transferSize || res.encodedBodySize || 0,
+              duration: Math.max(0, Math.round(res.duration || 0)),
+              status: 200,
+              timeStamp: Math.round((performance.timeOrigin || Date.now()) + res.startTime)
+            });
+          }
+        }
+        runtimeState.harvestedResources = harvested;
       }
     } catch {}
   }

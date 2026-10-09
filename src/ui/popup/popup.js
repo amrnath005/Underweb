@@ -147,7 +147,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // Protocol & Security
-    const isHttps = session.security.isHttps;
+    const isHttps = (session.security && session.security.isHttps) || (session.url ? session.url.startsWith('https://') : false);
     securityBadge.textContent = isHttps ? 'HTTPS' : 'INSECURE';
     securityBadge.className = `badge ${isHttps ? 'badge-emerald' : 'badge-rose'}`;
 
@@ -173,8 +173,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     if (session.protocols && session.protocols.length > 0) {
       protocolBadge.textContent = session.protocols[0].toUpperCase();
+    } else if (session.runtime && session.runtime.performance && session.runtime.performance.protocol) {
+      protocolBadge.textContent = session.runtime.performance.protocol.toUpperCase();
     } else {
-      protocolBadge.textContent = isHttps ? 'TLS' : 'HTTP';
+      protocolBadge.textContent = isHttps ? 'TLS 1.3' : 'HTTP';
     }
 
     // Metrics
@@ -208,8 +210,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // Infrastructure detection
     const infraItems = [];
-    if (session.security.headers) {
-      const h = session.security.headers;
+    let h = (session.security && session.security.headers) || {};
+    if (Object.keys(h).length === 0 && session.requests && session.requests.length > 0) {
+      const mainReq = session.requests.find(r => (r.type === 'main_frame' || r.type === 'document') && r.responseHeaders) || session.requests.find(r => r.responseHeaders);
+      if (mainReq && mainReq.responseHeaders) {
+        h = mainReq.responseHeaders;
+      }
+    }
+
+    if (h && Object.keys(h).length > 0) {
       if (h['cf-ray'] || (h['server'] && h['server'].toLowerCase().includes('cloudflare'))) {
         infraItems.push('Cloudflare');
       }
@@ -229,6 +238,14 @@ document.addEventListener('DOMContentLoaded', async () => {
         infraItems.push(h['server']);
       }
     }
+
+    if (session.domains && session.domains.length > 0) {
+      const domainsJoined = session.domains.join(' ').toLowerCase();
+      if (!infraItems.includes('Cloudflare') && domainsJoined.includes('cloudflare')) infraItems.push('Cloudflare');
+      if (!infraItems.includes('AWS CloudFront') && (domainsJoined.includes('cloudfront') || domainsJoined.includes('amazonaws'))) infraItems.push('AWS CloudFront');
+      if (!infraItems.includes('Vercel') && domainsJoined.includes('vercel')) infraItems.push('Vercel');
+    }
+
     if (session.ipAddresses && session.ipAddresses.length > 0) {
       infraItems.push(`IP: ${session.ipAddresses[0]}`);
     }
