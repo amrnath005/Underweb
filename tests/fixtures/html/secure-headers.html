@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Website with Common Security Headers Test Fixture</title>
+  <!-- HTTP response headers simulated in server / test harness:
+       Content-Security-Policy: default-src 'self'; frame-ancestors 'self';
+       Strict-Transport-Security: max-age=63072000; includeSubDomains; preload
+       X-Content-Type-Options: nosniff
+       X-Frame-Options: DENY
+       Referrer-Policy: strict-origin-when-cross-origin
+  -->
+</head>
+<body>
+  <h1>Security-Hardened Enterprise Origin</h1>
+  <p>All recommended defensive response headers are configured on the main document.</p>
+</body>
+</html>

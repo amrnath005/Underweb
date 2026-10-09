@@ -31,6 +31,7 @@ import { BountyReportBuilder } from '../src/security/bounty-report-builder.js';
 import { SourceTreeReconstructor } from '../src/security/source-tree-reconstructor.js';
 import { RouteHarvester } from '../src/security/route-harvester.js';
 import { JwtAuditor } from '../src/security/jwt-auditor.js';
+import { runSecurityPipelineTests } from './security-pipeline.test.js';
 
 let passed = 0;
 let failed = 0;
@@ -1146,6 +1147,11 @@ suite('SecurityAnalyzer Recon Integration & Dossier Exporter', () => {
   assert(dossierMd.includes('Reconstructed Project File System Tree'), 'Dossier includes ASCII file tree');
   assert(dossierMd.includes('/admin/login'), 'Dossier lists discovered administrative route');
 });
+
+// -------------------------------------------------------------
+// 28. Evidence-Driven Pipeline & Defensive Security Observations
+// -------------------------------------------------------------
+runSecurityPipelineTests(assert, suite);
 
 // -------------------------------------------------------------
 // Summary

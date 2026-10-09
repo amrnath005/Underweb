@@ -1,5 +1,7 @@
 // src/evidence/evidence-engine.js
 // Structured confidence scoring, signal aggregation, diminishing returns, and proof explanation engine.
+// Implements strict confirmed vs. inferred vs. ambiguous differentiation.
+// "Never label a technology as confirmed solely because of a weak or ambiguous fingerprint."
 
 export const EVIDENCE_TYPES = {
   WINDOW_GLOBAL: 'WINDOW_GLOBAL',
@@ -42,7 +44,7 @@ export class EvidenceRecord {
    * @param {string} id - Technology ID
    * @param {string} name - Display name
    * @param {string} category - Technology category
-   * @param {object} [metadata] - Optional website/description
+   * @param {object} [metadata] - Optional website/description/version
    */
   constructor(id, name, category, metadata = {}) {
     this.id = id;
@@ -50,18 +52,24 @@ export class EvidenceRecord {
     this.category = category;
     this.website = metadata.website || '';
     this.description = metadata.description || '';
+    this.version = metadata.version || null;
     this.firstObserved = Date.now();
 
     // Standard Evidence Collection
-    this.signals = []; // Array<{ type, key, value, description, source, strength }>
+    this.signals = []; // Array<{ type, key, value, description, source, strength, isAmbiguous }>
     this.evidence = []; // Alias for standard schema compatibility
     this.sources = []; // Array of distinct evidence types
+    this.source = 'browser'; // Primary evidence source description
     this.role = this._resolveDefaultRole(category);
 
     this.score = 0; // 0 - 100 percentage
     this.normalizedScore = 0.0; // 0.0 - 1.0
     this.confidence = 'LOW'; // HIGH | MEDIUM | LOW | UNKNOWN
-    this.status = 'UNKNOWN'; // OBSERVED | INFERRED | UNKNOWN
+    this.status = 'UNKNOWN'; // OBSERVED | INFERRED | UNKNOWN (for backwards-compatibility)
+    this.confirmed = false; // Whether detection is confirmed
+    this.isConfirmed = false; // Alias for confirmed
+    this.detectionType = 'UNCONFIRMED'; // CONFIRMED | INFERRED | AMBIGUOUS | UNCONFIRMED
+    this.ambiguityReasons = [];
     this.explanation = '';
   }
 
@@ -83,10 +91,16 @@ export class EvidenceRecord {
    * @param {string} description - Human-readable explanation
    * @param {string} [source] - Source file or origin (e.g. 'page-analyzer.js', 'DOM')
    * @param {string} [strength] - HIGH | MEDIUM | LOW
+   * @param {boolean} [isAmbiguous=false] - Whether this signal is weak or ambiguous
    */
-  addSignal(type, key, value, description, source = 'browser', strength = null) {
+  addSignal(type, key, value, description, source = 'browser', strength = null, isAmbiguous = false) {
     const baseWeight = SIGNAL_WEIGHTS[type] || 0.60;
     const computedStrength = strength || (baseWeight >= 0.85 ? 'HIGH' : (baseWeight >= 0.70 ? 'MEDIUM' : 'LOW'));
+
+    // Try extracting version if provided in value and not yet recorded
+    if (!this.version && typeof value === 'string' && /^\d+(\.\d+)+([a-zA-Z0-9.\-_]+)?$/.test(value.trim())) {
+      this.version = value.trim();
+    }
 
     const signalItem = {
       type,
@@ -94,7 +108,8 @@ export class EvidenceRecord {
       value: String(value ?? ''),
       description: description || `Detected via ${type}: ${key}`,
       source: source || 'browser',
-      strength: computedStrength
+      strength: computedStrength,
+      isAmbiguous: Boolean(isAmbiguous)
     };
 
     this.signals.push(signalItem);
@@ -102,12 +117,15 @@ export class EvidenceRecord {
     if (!this.sources.includes(type)) {
       this.sources.push(type);
     }
+    if (!this.source || this.source === 'browser') {
+      this.source = source || type;
+    }
 
     this.recompute();
   }
 
   /**
-   * Recompute normalized score, status, and confidence using diminishing returns.
+   * Recompute normalized score, status, confirmation, and confidence using diminishing returns.
    */
   recompute() {
     if (this.signals.length === 0) {
@@ -115,6 +133,9 @@ export class EvidenceRecord {
       this.normalizedScore = 0.0;
       this.confidence = 'UNKNOWN';
       this.status = 'UNKNOWN';
+      this.confirmed = false;
+      this.isConfirmed = false;
+      this.detectionType = 'UNCONFIRMED';
       this.explanation = 'No positive evidence signals observed.';
       return;
     }
@@ -125,6 +146,9 @@ export class EvidenceRecord {
     const typeCounts = new Map();
     let nonMatchProb = 1.0;
     let hasObservedDirectly = false;
+    let hasDefinitiveSignal = false;
+    let allAmbiguous = true;
+    this.ambiguityReasons = [];
 
     for (const sig of this.signals) {
       const count = typeCounts.get(sig.type) || 0;
@@ -135,6 +159,14 @@ export class EvidenceRecord {
       else if (count === 2) dampingFactor = 0.10;
       else if (count >= 3) dampingFactor = 0.02;
 
+      // Ambiguous signal penalty
+      if (sig.isAmbiguous || sig.type === EVIDENCE_TYPES.CSS_CLASS) {
+        dampingFactor *= 0.5;
+        this.ambiguityReasons.push(`${sig.type} "${sig.key}" is an ambiguous or non-unique pattern.`);
+      } else {
+        allAmbiguous = false;
+      }
+
       const baseWeight = SIGNAL_WEIGHTS[sig.type] || 0.50;
       const effectiveWeight = baseWeight * dampingFactor;
 
@@ -143,6 +175,18 @@ export class EvidenceRecord {
       if (sig.type !== EVIDENCE_TYPES.INFERRED_HEURISTIC) {
         hasObservedDirectly = true;
       }
+
+      // Check for definitive signal
+      if (
+        (sig.type === EVIDENCE_TYPES.WINDOW_GLOBAL && !sig.isAmbiguous) ||
+        (sig.type === EVIDENCE_TYPES.HTTP_HEADER && !sig.isAmbiguous) ||
+        (sig.type === EVIDENCE_TYPES.DOM_MARKER && !sig.isAmbiguous && sig.key && sig.key.includes('#')) ||
+        (sig.type === EVIDENCE_TYPES.PROTOCOL) ||
+        (sig.type === EVIDENCE_TYPES.PWA_MANIFEST) ||
+        (this.version !== null)
+      ) {
+        hasDefinitiveSignal = true;
+      }
     }
 
     const calculatedFraction = Math.min(0.99, Math.max(0, 1.0 - nonMatchProb));
@@ -150,6 +194,7 @@ export class EvidenceRecord {
     this.normalizedScore = parseFloat(calculatedFraction.toFixed(2));
     this.status = hasObservedDirectly ? 'OBSERVED' : 'INFERRED';
 
+    // Confidence mapping
     if (this.score >= 80) {
       this.confidence = 'HIGH';
     } else if (this.score >= 50) {
@@ -161,7 +206,28 @@ export class EvidenceRecord {
       this.status = 'UNKNOWN';
     }
 
+    // Strict Confirmation Contract:
+    // "Never label a technology as confirmed solely because of a weak or ambiguous fingerprint."
+    if (!hasObservedDirectly || this.status === 'INFERRED') {
+      this.confirmed = false;
+      this.isConfirmed = false;
+      this.detectionType = 'INFERRED';
+    } else if (allAmbiguous || this.confidence !== 'HIGH') {
+      this.confirmed = false;
+      this.isConfirmed = false;
+      this.detectionType = 'AMBIGUOUS';
+    } else if (hasDefinitiveSignal || this.sources.length >= 2) {
+      this.confirmed = true;
+      this.isConfirmed = true;
+      this.detectionType = 'CONFIRMED';
+    } else {
+      this.confirmed = false;
+      this.isConfirmed = false;
+      this.detectionType = 'UNCONFIRMED';
+    }
+
     const signalDescriptions = this.signals.map(s => s.description).join('; ');
-    this.explanation = `${this.name} (${this.category}) confirmed via ${this.signals.length} signal${this.signals.length > 1 ? 's' : ''} [${this.status}, ${this.confidence} confidence, score: ${this.score}%]. Signals: ${signalDescriptions}`;
+    const confirmLabel = this.confirmed ? 'CONFIRMED' : (this.status === 'INFERRED' ? 'INFERRED' : 'UNCONFIRMED');
+    this.explanation = `${this.name} (${this.category}) [${confirmLabel}, ${this.confidence} confidence, score: ${this.score}%]. Signals: ${signalDescriptions}`;
   }
 }

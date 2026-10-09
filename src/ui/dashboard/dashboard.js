@@ -944,12 +944,17 @@ function renderSecurityTab(cookies) {
 
   const scoreBadge = document.getElementById('securityScoreBadge');
   if (scoreBadge) {
-    scoreBadge.textContent = `${sec.score} / 100`;
-    let badgeClass = 'badge-emerald';
-    if (sec.score < 50) badgeClass = 'badge-rose';
-    else if (sec.score < 70) badgeClass = 'badge-amber';
-    else if (sec.score < 85) badgeClass = 'badge-cyan';
-    scoreBadge.className = `badge ${badgeClass}`;
+    if (sec.score === null || sec.assessmentState === 'INSUFFICIENT_EVIDENCE') {
+      scoreBadge.textContent = 'Not enough data';
+      scoreBadge.className = 'badge badge-neutral';
+    } else {
+      scoreBadge.textContent = `${sec.score} / 100`;
+      let badgeClass = 'badge-emerald';
+      if (sec.score < 50) badgeClass = 'badge-rose';
+      else if (sec.score < 70) badgeClass = 'badge-amber';
+      else if (sec.score < 85) badgeClass = 'badge-cyan';
+      scoreBadge.className = `badge ${badgeClass}`;
+    }
   }
 
   // 3. Subtext
@@ -1493,6 +1498,8 @@ function showFindingModal(f) {
         <span class="badge badge-slate" style="font-size: 12px; padding: 4px 10px;">Category: ${f.category}</span>
         <span class="badge badge-cyan" style="font-size: 12px; padding: 4px 10px;">Scope: ${f.resourceScope || 'MAIN_DOCUMENT'}</span>
         <span class="badge badge-neutral" style="font-size: 12px; padding: 4px 10px;">Party: ${f.partyScope || 'FIRST_PARTY'}</span>
+        <span class="badge ${f.confidence === 'HIGH' ? 'badge-emerald' : 'badge-amber'}" style="font-size: 12px; padding: 4px 10px;">Confidence: ${f.confidence || 'HIGH'}</span>
+        <span class="badge ${f.isConfirmedExploit ? 'badge-rose' : (f.isControlMissing ? 'badge-amber' : 'badge-neutral')}" style="font-size: 12px; padding: 4px 10px;">Type: ${f.isConfirmedExploit ? 'Confirmed Exploit Path' : (f.isControlMissing ? 'Missing Defense Control' : 'Potential Misconfiguration')}</span>
         ${f.scoreDeduction > 0 ? `<span class="badge badge-rose" style="font-size: 12px; padding: 4px 10px;">Score Impact: -${f.scoreDeduction} pts</span>` : '<span class="badge badge-emerald" style="font-size: 12px; padding: 4px 10px;">No score penalty</span>'}
       </div>
 
@@ -1511,7 +1518,7 @@ function showFindingModal(f) {
       <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
         <div>
           <div class="finding-field-label">Observed Evidence</div>
-          <div class="finding-field-value" style="color: #f43f5e;">${f.observed || 'None'}</div>
+          <div class="finding-field-value" style="color: #f43f5e;">${f.evidence || f.observed || 'None'}</div>
         </div>
         <div>
           <div class="finding-field-label">Expected Security Baseline</div>
@@ -1522,7 +1529,7 @@ function showFindingModal(f) {
       <div>
         <div class="finding-field-label">Technical Details & Risk Assessment</div>
         <div style="font-size: 12.5px; color: var(--text-primary); line-height: 1.5; background: var(--bg-muted); padding: 10px; border-radius: 4px;">
-          ${f.description}
+          ${f.explanation || f.description}
         </div>
       </div>
 
@@ -1531,6 +1538,15 @@ function showFindingModal(f) {
           <div class="finding-field-label">Recommended Remediation</div>
           <div style="font-size: 12px; color: var(--text-secondary); line-height: 1.5; background: rgba(16, 185, 129, 0.08); border-left: 3px solid #10b981; padding: 10px; border-radius: 4px;">
             ${f.remediation}
+          </div>
+        </div>
+      ` : ''}
+
+      ${f.limitations ? `
+        <div>
+          <div class="finding-field-label">Limitations of Passive Observation</div>
+          <div style="font-size: 11.5px; color: var(--text-muted); line-height: 1.4; background: rgba(148, 163, 184, 0.1); border-left: 3px solid #64748b; padding: 8px 10px; border-radius: 4px; font-style: italic;">
+            ${f.limitations}
           </div>
         </div>
       ` : ''}

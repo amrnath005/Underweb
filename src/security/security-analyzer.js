@@ -1,7 +1,8 @@
 // src/security/security-analyzer.js
-// Evidence-grounded security posture auditor and vulnerability evaluator.
+// Evidence-grounded security posture auditor and defensive vulnerability evaluator.
 // Strictly separates Main Document security from subresources and third parties.
-// Implements category-weighted scoring (100 pts) and assessment states (ASSESSED, PARTIALLY_ASSESSED, INSUFFICIENT_EVIDENCE).
+// Implements category-weighted scoring (100 pts), avoids double-counting, enforces passive boundaries,
+// and adheres strictly to the 7-property finding schema with clear distinctions between missing controls and exploit paths.
 
 import { HeaderAnalyzer } from './header-analyzer.js';
 import { MixedContentDetector, MIXED_CONTENT_TYPES } from './mixed-content.js';
@@ -13,6 +14,9 @@ import { RouteHarvester } from './route-harvester.js';
 import { JwtAuditor } from './jwt-auditor.js';
 import { SourceTreeReconstructor } from './source-tree-reconstructor.js';
 import { UrlUtils } from '../utils/url-utils.js';
+import { DependencyAuditor } from './dependency-auditor.js';
+import { BoundaryEnforcer } from './boundary-enforcer.js';
+import { FingerprintEngine } from '../detection/fingerprint-engine.js';
 
 export const SECURITY_STATES = {
   ASSESSED: 'ASSESSED',
@@ -31,6 +35,8 @@ export class SecurityAnalyzer {
     if (!sessionSnapshot) {
       return this._createInsufficientReport();
     }
+
+    rawCookies = Array.isArray(rawCookies) ? rawCookies : [];
 
     const {
       url = '',
@@ -98,8 +104,10 @@ export class SecurityAnalyzer {
         category: 'TRANSPORT',
         header: 'Transport Security',
         severity: 'CRITICAL',
+        confidence: 'HIGH',
         scoreImpact: -25,
         scoreDeduction: 25,
+        scoreExplanation: 'Deducted 25 points (entire transport score) for unencrypted plaintext HTTP main document.',
         isMainDocument: true,
         resourceScope: 'MAIN_DOCUMENT',
         isFirstParty: true,
@@ -111,8 +119,15 @@ export class SecurityAnalyzer {
         observed: 'http://',
         expectedCondition: 'https:// with TLS 1.3/1.2',
         expected: 'https:// with TLS 1.3/1.2',
+        evidence: 'Main document transmitted via plaintext unencrypted HTTP (http://)',
         evidenceSource: 'Main Document URL Protocol',
-        description: 'The main document was transmitted over plaintext unencrypted HTTP. All requests, cookies, and content are exposed to network eavesdropping and tampering.'
+        explanation: 'The main document was transmitted over plaintext unencrypted HTTP. All requests, cookies, and page content are exposed to eavesdropping and manipulation by on-path adversaries.',
+        description: 'The main document was transmitted over plaintext unencrypted HTTP. All requests, cookies, and content are exposed to network eavesdropping and tampering.',
+        remediation: 'Enforce HTTPS on all requests by redirecting HTTP traffic (HTTP 301) to HTTPS and provisioning a TLS certificate.',
+        limitations: 'Direct observation confirms the unencrypted protocol for this session.',
+        findingType: 'CONFIRMED',
+        isControlMissing: true,
+        isConfirmedExploit: true
       });
     }
 
@@ -149,22 +164,24 @@ export class SecurityAnalyzer {
         mixedScore -= 8;
       } else {
         passiveMixedCount++;
-        mixedScore -= 2;
+        // Diminishing returns on passive mixed content to avoid double-counting
+        if (passiveMixedCount === 1) {
+          mixedScore -= 2;
+        } else if (passiveMixedCount <= 3) {
+          mixedScore -= 1;
+        }
       }
       allFindings.push({
+        ...m,
         category: 'MIXED_CONTENT',
         header: 'Mixed Content',
-        severity: m.severity,
-        scoreImpact: m.scoreImpact,
         isMainDocument: false,
         isFirstParty: m.firstParty,
         affectedUrl: m.url,
         resourceType: m.resourceType,
-        title: m.title,
         observedValue: m.url,
         expectedCondition: 'https://',
-        evidenceSource: 'Network Telemetry Subresource',
-        description: m.description
+        evidenceSource: 'Network Telemetry Subresource'
       });
     });
     mixedScore = Math.max(0, Math.min(15, mixedScore));
@@ -179,19 +196,32 @@ export class SecurityAnalyzer {
         const deduction = Math.min(10, insecureCookies.length * 3);
         cookieScore -= deduction;
         allFindings.push({
+          id: 'INSECURE_COOKIES_MISSING_SECURE',
           category: 'COOKIES',
           header: 'Cookie Hygiene',
           severity: insecureCookies.length > 3 ? 'HIGH' : 'MEDIUM',
+          confidence: 'HIGH',
           scoreImpact: -deduction,
+          scoreDeduction: deduction,
+          scoreExplanation: `Deducted ${deduction} points from Cookie category for ${insecureCookies.length} cookie(s) missing Secure attribute.`,
           isMainDocument: false,
           isFirstParty: true,
           affectedUrl: primaryDomain,
           resourceType: 'cookie',
           title: `${insecureCookies.length} Cookie${insecureCookies.length > 1 ? 's' : ''} Missing Secure Flag on HTTPS`,
           observedValue: insecureCookies.slice(0, 3).map(c => c.name).join(', ') + (insecureCookies.length > 3 ? '...' : ''),
+          observed: insecureCookies.slice(0, 3).map(c => c.name).join(', '),
+          evidence: `Cookies without Secure flag: ${insecureCookies.map(c => c.name).join(', ')}`,
           expectedCondition: 'Secure; SameSite=Lax (or Strict)',
+          expected: 'Secure; SameSite=Lax',
           evidenceSource: 'Browser Cookie Store',
-          description: 'Cookies missing the Secure flag can be leaked over plaintext HTTP requests or during mixed-content interactions.'
+          explanation: 'Cookies without the Secure attribute can be transmitted over plaintext HTTP or during mixed-content interactions.',
+          description: 'Cookies missing the Secure flag can be leaked over plaintext HTTP requests or during mixed-content interactions.',
+          remediation: 'Set the Secure flag on all cookies issued over HTTPS.',
+          limitations: 'Evaluates cookie jar attributes observable in the browser; does not inspect third-party tracking cookies.',
+          findingType: 'POTENTIAL',
+          isControlMissing: true,
+          isConfirmedExploit: false
         });
       }
 
@@ -200,19 +230,32 @@ export class SecurityAnalyzer {
       if (sensitiveMissingHttpOnly.length > 0) {
         cookieScore -= 4;
         allFindings.push({
+          id: 'SENSITIVE_COOKIES_MISSING_HTTPONLY',
           category: 'COOKIES',
           header: 'Cookie Hygiene',
           severity: 'MEDIUM',
+          confidence: 'HIGH',
           scoreImpact: -4,
+          scoreDeduction: 4,
+          scoreExplanation: 'Deducted 4 points from Cookie category for sensitive session cookies missing HttpOnly flag.',
           isMainDocument: false,
           isFirstParty: true,
           affectedUrl: primaryDomain,
           resourceType: 'cookie',
           title: 'Sensitive Session/Auth Cookies Accessible via JavaScript (Missing HttpOnly)',
           observedValue: sensitiveMissingHttpOnly.map(c => c.name).join(', '),
+          observed: sensitiveMissingHttpOnly.map(c => c.name).join(', '),
+          evidence: `Sensitive cookies missing HttpOnly: ${sensitiveMissingHttpOnly.map(c => c.name).join(', ')}`,
           expectedCondition: 'HttpOnly flag set on authentication tokens',
+          expected: 'HttpOnly flag set on authentication tokens',
           evidenceSource: 'Browser Cookie Store',
-          description: 'Session identifiers without the HttpOnly attribute can be exfiltrated by malicious scripts in the event of an XSS vulnerability.'
+          explanation: 'Session identifiers without the HttpOnly attribute can be read by JavaScript, allowing exfiltration if an XSS vulnerability exists.',
+          description: 'Session identifiers without the HttpOnly attribute can be exfiltrated by malicious scripts in the event of an XSS vulnerability.',
+          remediation: 'Mark authentication and session cookies with the HttpOnly flag on the server.',
+          limitations: 'HttpOnly prevents client-side script access; it does not protect against network interception if Secure is also omitted.',
+          findingType: 'POTENTIAL',
+          isControlMissing: true,
+          isConfirmedExploit: false
         });
       }
     }
@@ -226,19 +269,32 @@ export class SecurityAnalyzer {
       corsReport.issues.forEach(iss => {
         isolationScore -= 6;
         allFindings.push({
+          id: 'INSECURE_CORS_WILDCARD_CREDENTIALS',
           category: 'CORS',
           header: 'CORS Configuration',
           severity: iss.severity,
+          confidence: 'HIGH',
           scoreImpact: -6,
+          scoreDeduction: 6,
+          scoreExplanation: 'Deducted 6 points from Isolation category for insecure wildcard CORS origin with credentials.',
           isMainDocument: true,
           isFirstParty: true,
           affectedUrl: mainUrl,
           resourceType: 'headers',
           title: iss.title,
           observedValue: 'Access-Control-Allow-Origin: * with Credentials',
+          observed: 'Access-Control-Allow-Origin: * with Credentials',
+          evidence: 'Access-Control-Allow-Origin: * returned alongside Access-Control-Allow-Credentials: true',
           expectedCondition: 'Explicit non-wildcard origin when credentials are supported',
+          expected: 'Explicit non-wildcard origin when credentials are supported',
           evidenceSource: 'Main Document Headers',
-          description: iss.description
+          explanation: iss.description,
+          description: iss.description,
+          remediation: 'Never use wildcard (*) for Access-Control-Allow-Origin when allowing credentials. Echo specific trusted origin dynamically.',
+          limitations: 'Evaluates HTTP headers on observable responses.',
+          findingType: 'CONFIRMED',
+          isControlMissing: false,
+          isConfirmedExploit: false
         });
       });
     }
@@ -249,7 +305,19 @@ export class SecurityAnalyzer {
     // -------------------------------------------------------------
     const sourcemapFindings = SourcemapDetector.detect(requests);
     sourcemapFindings.forEach(f => {
-      allFindings.push(f);
+      allFindings.push({
+        ...f,
+        confidence: 'HIGH',
+        evidence: f.observed || `${f.count} sourcemap reference(s) found`,
+        remediation: 'Disable production source map emission or restrict access via authenticated routes.',
+        limitations: 'Source maps assist code review and reverse-engineering, but do not directly compromise security on their own.',
+        findingType: 'INFORMATIONAL',
+        isControlMissing: false,
+        isConfirmedExploit: false,
+        scoreDeduction: 0,
+        scoreImpact: 0,
+        scoreExplanation: 'Informational finding: Source map disclosure does not reduce security posture score.'
+      });
     });
 
     // -------------------------------------------------------------
@@ -257,14 +325,17 @@ export class SecurityAnalyzer {
     // -------------------------------------------------------------
     const leaks = LeakDetector.detect(sessionSnapshot);
     leaks.forEach(leak => {
+      const tagged = BoundaryEnforcer.tagPassiveFinding(leak);
+      const deduction = leak.severity === 'CRITICAL' ? 15 : leak.severity === 'HIGH' ? 10 : 5;
       allFindings.push({
-        ...leak,
+        ...tagged,
         category: 'LEAKS',
         header: 'Leaked Credentials & Data',
         isMainDocument: false,
         isFirstParty: true,
-        scoreImpact: leak.severity === 'CRITICAL' ? -15 : leak.severity === 'HIGH' ? -10 : -5,
-        scoreDeduction: leak.severity === 'CRITICAL' ? 15 : leak.severity === 'HIGH' ? 10 : 5
+        scoreImpact: -deduction,
+        scoreDeduction: deduction,
+        scoreExplanation: `Deducted ${deduction} points for ${leak.severity} credential/data exposure in client-facing telemetry.`
       });
     });
 
@@ -282,7 +353,15 @@ export class SecurityAnalyzer {
         isMainDocument: false,
         isFirstParty: true,
         scoreImpact: 0,
-        scoreDeduction: 0
+        scoreDeduction: 0,
+        confidence: 'HIGH',
+        evidence: `${f.count || f.routes?.length || 1} route(s) observed in client bundle`,
+        remediation: 'Restrict administrative and debugging actuator routes behind authenticated API gateways.',
+        limitations: 'Routes were harvested from client-side bundles; active authorization was not tested.',
+        findingType: 'INFORMATIONAL',
+        isControlMissing: false,
+        isConfirmedExploit: false,
+        scoreExplanation: 'Informational reconnaissance: Discovered routes do not reduce score unless vulnerabilities exist.'
       });
     });
 
@@ -291,13 +370,22 @@ export class SecurityAnalyzer {
     // -------------------------------------------------------------
     const jwtReport = JwtAuditor.audit(sessionSnapshot, rawCookies);
     jwtReport.findings.forEach(f => {
+      const deduction = f.severity === 'CRITICAL' ? 15 : (f.severity === 'HIGH' ? 10 : 2);
       allFindings.push({
         ...f,
         header: 'Authentication & Tokens',
         isMainDocument: false,
         isFirstParty: true,
-        scoreImpact: f.severity === 'CRITICAL' ? -15 : (f.severity === 'HIGH' ? -10 : -2),
-        scoreDeduction: f.severity === 'CRITICAL' ? 15 : (f.severity === 'HIGH' ? 10 : 2)
+        confidence: 'HIGH',
+        evidence: f.tokenSnippet || f.title,
+        remediation: 'Ensure tokens are signed with robust cryptographic algorithms (RS256, ES256, HS256) and expired tokens are discarded.',
+        limitations: 'Passively observed in client storage and transit headers.',
+        findingType: f.severity === 'CRITICAL' ? 'CONFIRMED' : 'POTENTIAL',
+        isControlMissing: f.severity !== 'CRITICAL',
+        isConfirmedExploit: f.severity === 'CRITICAL',
+        scoreImpact: -deduction,
+        scoreDeduction: deduction,
+        scoreExplanation: `Deducted ${deduction} points for ${f.severity} JWT token risk.`
       });
     });
 
@@ -311,9 +399,29 @@ export class SecurityAnalyzer {
     }
 
     // -------------------------------------------------------------
-    // TOTAL SCORE & GRADE RESOLUTION
+    // CATEGORY 11: Outdated Client-Side Dependencies
     // -------------------------------------------------------------
-    const totalScore = Math.round(transportScore + headersScore + mixedScore + cookieScore + isolationScore);
+    let detectedTechs = [];
+    try {
+      detectedTechs = FingerprintEngine.detect(sessionSnapshot, rawCookies);
+    } catch {}
+
+    const dependencyFindings = DependencyAuditor.audit(detectedTechs);
+    let dependencyDeductions = 0;
+    dependencyFindings.forEach(df => {
+      dependencyDeductions += df.scoreDeduction;
+      allFindings.push(df);
+    });
+
+    // -------------------------------------------------------------
+    // TOTAL SCORE & GRADE RESOLUTION (Documented Scoring Model)
+    // -------------------------------------------------------------
+    // Total is calculated strictly from observed categories without arbitrary defaults.
+    // Base 100 points distributed across Transport (25), Headers (30), Mixed Content (15),
+    // Cookies (15), Isolation (15), with bounded dependency deductions (max 10).
+    const rawCategoryTotal = transportScore + headersScore + mixedScore + cookieScore + isolationScore;
+    const boundedDependencyPenalty = Math.min(10, dependencyDeductions);
+    const totalScore = Math.max(0, Math.round(rawCategoryTotal - boundedDependencyPenalty));
     const boundedScore = Math.max(0, Math.min(100, totalScore));
 
     let grade = 'F';
@@ -323,7 +431,7 @@ export class SecurityAnalyzer {
     else if (boundedScore >= 30) grade = 'D';
     else grade = 'F';
 
-    // Student-friendly explanation
+    // Meaningful, evidence-driven posture summary
     let postureSummary = 'Security Posture: Excellent';
     if (criticalLeaks.length > 0) {
       postureSummary = `Security Posture: Critical Risk (${criticalLeaks.length} Critical Secret/DB Leak${criticalLeaks.length > 1 ? 's' : ''})`;
@@ -347,6 +455,7 @@ export class SecurityAnalyzer {
       mixedContentScore: mixedScore,
       cookieScore,
       isolationScore,
+      dependencyScore: Math.max(0, 10 - boundedDependencyPenalty),
       totalDeductions: 100 - boundedScore
     };
 
@@ -359,10 +468,54 @@ export class SecurityAnalyzer {
       referrerPolicyActive: headerReport && headerReport.referrerPolicy ? headerReport.referrerPolicy.policy : null
     };
 
+    // Standardized finding formatting conforming strictly to the 7-property contract:
+    // title, severity, evidence, confidence, explanation, remediation, limitations.
+    const standardizedFindings = allFindings.map(f => {
+      const sev = f.severity || 'LOW';
+      const id = f.id || f.header || (f.title ? f.title.replace(/\s+/g, '_').toUpperCase() : 'SECURITY_FINDING');
+      const deduction = f.scoreDeduction !== undefined ? f.scoreDeduction : Math.abs(f.scoreImpact || 0);
+      const observed = f.observed !== undefined ? f.observed : (f.observedValue || f.evidence || 'Observed telemetry');
+      const expected = f.expected !== undefined ? f.expected : (f.expectedCondition || 'Secure baseline configuration');
+      const explanation = f.explanation || f.description || 'Observed defensive security finding.';
+      const remediation = f.remediation || 'Review configuration and implement defensive controls.';
+      const limitations = f.limitations || 'Passive observation evaluates client-visible artifacts; does not verify active exploitability.';
+      const confidence = f.confidence || (sev === 'CRITICAL' || sev === 'HIGH' ? 'HIGH' : 'MEDIUM');
+      const findingType = f.findingType || (sev === 'CRITICAL' ? 'CONFIRMED' : 'POTENTIAL');
+      const isControlMissing = f.isControlMissing !== undefined ? f.isControlMissing : (f.category === 'HEADERS' || f.category === 'COOKIES');
+      const isConfirmedExploit = f.isConfirmedExploit !== undefined ? f.isConfirmedExploit : (f.category === 'LEAKS' || id === 'PLAINTEXT_HTTP');
+
+      return {
+        ...f,
+        id,
+        title: f.title || id,
+        severity: sev,
+        evidence: f.evidence || observed,
+        observed,
+        expected,
+        confidence,
+        explanation,
+        description: explanation,
+        remediation,
+        limitations,
+        findingType,
+        isControlMissing,
+        isConfirmedExploit,
+        scoreDeduction: deduction,
+        scoreExplanation: f.scoreExplanation || `Deducted ${deduction} points from security posture score for ${f.title || id}.`,
+        resourceScope: f.resourceScope || (f.isMainDocument ? 'MAIN_DOCUMENT' : 'SUBRESOURCE'),
+        partyScope: f.partyScope || (f.isFirstParty ? 'FIRST_PARTY' : 'THIRD_PARTY')
+      };
+    });
+
+    const confirmedFindings = standardizedFindings.filter(f => f.findingType === 'CONFIRMED' || f.isConfirmedExploit);
+    const potentialFindings = standardizedFindings.filter(f => f.findingType === 'POTENTIAL' || f.isControlMissing);
+    const informationalFindings = standardizedFindings.filter(f => f.severity === 'INFO' || f.findingType === 'INFORMATIONAL');
+
     return {
       state,
       assessmentState: state,
       score: boundedScore,
+      scoreDisplay: `${boundedScore} / 100`,
       grade,
       isHttps,
       mainUrl,
@@ -370,6 +523,7 @@ export class SecurityAnalyzer {
       postureSummary,
       summary: categorySummary,
       baseline: baselineSummary,
+      disclaimer: 'Underweb performs passive defensive security analysis. Passive observations identify missing controls and exposed configurations; they do not equate to a complete penetration test.',
       categories: {
         transport: { score: transportScore, max: 25, status: isHttps ? 'PASS' : 'FAIL' },
         headers: { score: headersScore, max: 30, status: hasMainHeaders ? (headersScore >= 20 ? 'PASS' : 'WARN') : 'AWAITING_TELEMETRY' },
@@ -392,16 +546,15 @@ export class SecurityAnalyzer {
       routeStats: routeReport.stats,
       tokens: jwtReport.tokens,
       sourceTree,
-      findings: allFindings.map(f => ({
-        ...f,
-        id: f.id || f.header || (f.title ? f.title.replace(/\s+/g, '_').toUpperCase() : 'SECURITY_FINDING'),
-        scoreDeduction: f.scoreDeduction !== undefined ? f.scoreDeduction : Math.abs(f.scoreImpact || 0),
-        observed: f.observed !== undefined ? f.observed : f.observedValue,
-        expected: f.expected !== undefined ? f.expected : f.expectedCondition,
-        resourceScope: f.resourceScope || (f.isMainDocument ? 'MAIN_DOCUMENT' : 'SUBRESOURCE'),
-        partyScope: f.partyScope || (f.isFirstParty ? 'FIRST_PARTY' : 'THIRD_PARTY')
-      })),
-      totalFindings: allFindings.length
+      dependencies: dependencyFindings,
+      findings: standardizedFindings,
+      findingStats: {
+        confirmedCount: confirmedFindings.length,
+        potentialCount: potentialFindings.length,
+        infoCount: informationalFindings.length,
+        unknownCount: 0
+      },
+      totalFindings: standardizedFindings.length
     };
   }
 
@@ -410,11 +563,13 @@ export class SecurityAnalyzer {
       state: SECURITY_STATES.INSUFFICIENT_EVIDENCE,
       assessmentState: SECURITY_STATES.INSUFFICIENT_EVIDENCE,
       score: null,
+      scoreDisplay: 'Not enough data',
       grade: 'N/A',
       isHttps: false,
       mainUrl: '',
       mainProtocol: '',
-      postureSummary: 'Security Posture: Evidence Insufficient',
+      postureSummary: 'Security Posture: Not enough data (Insufficient Telemetry)',
+      disclaimer: 'Passive observation requires observed network telemetry and response headers. No telemetry has been recorded yet.',
       summary: {
         transportScore: 0,
         headerScore: 0,
@@ -448,7 +603,9 @@ export class SecurityAnalyzer {
       routeStats: { total: 0, adminCount: 0, authCount: 0, paymentCount: 0, debugCount: 0, apiCount: 0, publicCount: 0 },
       tokens: [],
       sourceTree: null,
+      dependencies: [],
       findings: [],
+      findingStats: { confirmedCount: 0, potentialCount: 0, infoCount: 0, unknownCount: 0 },
       totalFindings: 0
     };
   }

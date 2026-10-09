@@ -121,13 +121,16 @@ export class FingerprintEngine {
         for (const g of sigs.globals) {
           const match = globals.find(item => item.name === tech.name || item.evidenceKey === `window.${g}`);
           if (match) {
+            const ver = match.version || null;
+            if (ver && !record.version) record.version = ver;
             record.addSignal(
               EVIDENCE_TYPES.WINDOW_GLOBAL,
               `window.${g}`,
-              match.version || 'present',
-              `Observed global variable window.${g}${match.version ? ` (v${match.version})` : ''}`,
+              ver || 'present',
+              `Observed global variable window.${g}${ver ? ` (v${ver})` : ''}`,
               'page-analyzer.js',
-              'HIGH'
+              'HIGH',
+              false
             );
           }
         }
@@ -136,28 +139,45 @@ export class FingerprintEngine {
       // 2. DOM Markers & Selectors
       if (sigs.dom) {
         for (const marker of sigs.dom) {
-          const match = frameworkMarkers.find(m =>
-            m.framework === tech.name ||
-            m.marker === marker ||
-            m.marker.includes(marker)
-          );
+          const match = frameworkMarkers.find(m => {
+            // Class heuristics should NEVER match specific DOM element selectors
+            if (m.marker && (m.marker.includes('class signature') || m.marker.includes('Utility class') || m.marker.includes('component class'))) {
+              return false;
+            }
+            if (m.marker === marker || (m.marker && m.marker.includes(marker)) || (marker && marker.includes(m.marker))) {
+              return true;
+            }
+            if (m.framework === tech.name && (m.marker.includes('asset/marker') || m.marker.includes('asset/meta'))) {
+              return true;
+            }
+            return false;
+          });
           if (match) {
+            let ver = null;
+            if (match.marker && match.marker.includes('ng-version:')) {
+              ver = match.marker.split('ng-version:')[1].trim();
+            }
+            if (ver && !record.version) record.version = ver;
             record.addSignal(
               EVIDENCE_TYPES.DOM_MARKER,
               marker,
-              'matched',
+              ver || 'matched',
               `Observed DOM selector or marker: ${match.marker}`,
               'DOM',
-              'HIGH'
+              'HIGH',
+              false
             );
           }
         }
       }
 
-      // 3. CSS Class Signatures
+      // 3. CSS Class Signatures (Ambiguous Heuristic)
       if (sigs.domClasses) {
         for (const clsRegex of sigs.domClasses) {
-          const match = frameworkMarkers.find(m => m.framework === tech.name || clsRegex.test(m.marker));
+          const match = frameworkMarkers.find(m =>
+            (m.framework === tech.name && (m.marker.includes('class signature') || m.marker.includes('Utility class') || m.marker.includes('component class'))) ||
+            clsRegex.test(m.marker)
+          );
           if (match) {
             record.addSignal(
               EVIDENCE_TYPES.CSS_CLASS,
@@ -165,8 +185,10 @@ export class FingerprintEngine {
               'matched',
               `Observed CSS class signature: ${match.marker}`,
               'DOM',
-              'MEDIUM'
+              'MEDIUM',
+              true // CSS classes are ambiguous/non-unique markers
             );
+            break;
           }
         }
       }
@@ -179,26 +201,40 @@ export class FingerprintEngine {
           // Check main frame document headers first
           const mainVal = mainHeaders[lowerKey];
           if (mainVal && pattern.test(mainVal)) {
+            let ver = null;
+            const verMatch = mainVal.match(/(\d+\.\d+(?:\.\d+)?)/);
+            if (verMatch && verMatch[1]) {
+              ver = verMatch[1];
+              if (!record.version) record.version = ver;
+            }
             record.addSignal(
               EVIDENCE_TYPES.HTTP_HEADER,
               headerKey,
               mainVal,
               `Main frame HTTP response header ${headerKey}: "${mainVal}" matches signature`,
               'main_frame header',
-              'HIGH'
+              'HIGH',
+              false
             );
           } else {
             // Check subresource response headers (APIs, static bundles)
             for (const sub of subresourceHeaders) {
               const subVal = sub.headers[lowerKey];
               if (subVal && pattern.test(subVal)) {
+                let ver = null;
+                const verMatch = subVal.match(/(\d+\.\d+(?:\.\d+)?)/);
+                if (verMatch && verMatch[1]) {
+                  ver = verMatch[1];
+                  if (!record.version) record.version = ver;
+                }
                 record.addSignal(
                   EVIDENCE_TYPES.HTTP_HEADER,
                   headerKey,
                   subVal,
                   `Subresource HTTP response header ${headerKey}: "${subVal}" on ${sub.url.slice(0, 60)}... matches signature`,
                   'subresource header',
-                  'HIGH'
+                  'HIGH',
+                  false
                 );
                 break; // One match per header pattern is sufficient
               }
@@ -212,13 +248,21 @@ export class FingerprintEngine {
         for (const scriptRegex of sigs.scripts) {
           for (const sUrl of allScriptUrls) {
             if (scriptRegex.test(sUrl)) {
+              let ver = null;
+              const verMatch = sUrl.match(/(?:@|[-_])(\d+\.\d+(?:\.\d+)?(?:-[a-zA-Z0-9.]+)?)/) ||
+                               sUrl.match(/[?&]v(?:er)?=(\d+\.\d+(?:\.\d+)?)/);
+              if (verMatch && verMatch[1]) {
+                ver = verMatch[1];
+                if (!record.version) record.version = ver;
+              }
               record.addSignal(
                 EVIDENCE_TYPES.SCRIPT_URL,
                 scriptRegex.toString(),
-                sUrl,
-                `Loaded script bundle URL matches pattern: ${sUrl.slice(0, 80)}`,
+                ver || sUrl,
+                `Loaded script bundle URL matches pattern: ${sUrl.slice(0, 80)}${ver ? ` (detected v${ver})` : ''}`,
                 'network/script',
-                'HIGH'
+                'HIGH',
+                false
               );
               break;
             }
@@ -237,7 +281,8 @@ export class FingerprintEngine {
                 sUrl,
                 `Stylesheet URL matches pattern: ${sUrl.slice(0, 80)}`,
                 'DOM stylesheet',
-                'MEDIUM'
+                'MEDIUM',
+                false
               );
               break;
             }
@@ -250,13 +295,20 @@ export class FingerprintEngine {
         for (const m of sigs.meta) {
           const content = metaTags[m.name.toLowerCase()];
           if (content && m.content.test(content)) {
+            let ver = null;
+            const verMatch = content.match(/(\d+\.\d+(?:\.\d+)?)/);
+            if (verMatch && verMatch[1]) {
+              ver = verMatch[1];
+              if (!record.version) record.version = ver;
+            }
             record.addSignal(
               EVIDENCE_TYPES.META_TAG,
               `<meta name="${m.name}">`,
               content,
               `Confirmed meta tag <meta name="${m.name}" content="${content}">`,
               'DOM meta',
-              'HIGH'
+              'HIGH',
+              false
             );
           }
         }
@@ -273,7 +325,8 @@ export class FingerprintEngine {
                 cName,
                 `Cookie "${cName}" matches known signature`,
                 'cookies',
-                'MEDIUM'
+                'MEDIUM',
+                true // Standalone cookies are ambiguous heuristic
               );
               break;
             }

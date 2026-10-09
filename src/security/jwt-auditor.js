@@ -114,6 +114,7 @@ export class JwtAuditor {
     const discoveredTokens = [];
     const seenSignatures = new Set();
     const findings = [];
+    const cookieList = Array.isArray(cookies) ? cookies : [];
 
     const processCandidate = (candidate, loc) => {
       if (!candidate || typeof candidate !== 'string' || candidate.length < 24) return;
@@ -130,7 +131,7 @@ export class JwtAuditor {
     };
 
     // 1. Scan cookies
-    for (const c of cookies) {
+    for (const c of cookieList) {
       if (c && c.value) {
         processCandidate(c.value, `Cookie: ${c.name}`);
       }
