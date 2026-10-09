@@ -9,6 +9,9 @@ import { CorsAnalyzer } from './cors-analyzer.js';
 import { CookieAnalyzer } from '../privacy/cookie-analyzer.js';
 import { SourcemapDetector } from '../detection/sourcemap-detector.js';
 import { LeakDetector } from './leak-detector.js';
+import { RouteHarvester } from './route-harvester.js';
+import { JwtAuditor } from './jwt-auditor.js';
+import { SourceTreeReconstructor } from './source-tree-reconstructor.js';
 import { UrlUtils } from '../utils/url-utils.js';
 
 export const SECURITY_STATES = {
@@ -269,6 +272,45 @@ export class SecurityAnalyzer {
     const highLeaks = leaks.filter(l => l.severity === 'HIGH');
 
     // -------------------------------------------------------------
+    // CATEGORY 8: Route & Attack Surface Harvesting
+    // -------------------------------------------------------------
+    const routeReport = RouteHarvester.harvest(sessionSnapshot);
+    routeReport.findings.forEach(f => {
+      allFindings.push({
+        ...f,
+        header: 'Attack Surface',
+        isMainDocument: false,
+        isFirstParty: true,
+        scoreImpact: 0,
+        scoreDeduction: 0
+      });
+    });
+
+    // -------------------------------------------------------------
+    // CATEGORY 9: Client JWT Token & Cryptographic Auditing
+    // -------------------------------------------------------------
+    const jwtReport = JwtAuditor.audit(sessionSnapshot, rawCookies);
+    jwtReport.findings.forEach(f => {
+      allFindings.push({
+        ...f,
+        header: 'Authentication & Tokens',
+        isMainDocument: false,
+        isFirstParty: true,
+        scoreImpact: f.severity === 'CRITICAL' ? -15 : (f.severity === 'HIGH' ? -10 : -2),
+        scoreDeduction: f.severity === 'CRITICAL' ? 15 : (f.severity === 'HIGH' ? 10 : 2)
+      });
+    });
+
+    // -------------------------------------------------------------
+    // CATEGORY 10: Source Map Project Tree Reconstruction
+    // -------------------------------------------------------------
+    let sourceTree = null;
+    const rawSources = sessionSnapshot.sourceMapSources || [];
+    if (rawSources.length > 0) {
+      sourceTree = SourceTreeReconstructor.reconstruct(rawSources);
+    }
+
+    // -------------------------------------------------------------
     // TOTAL SCORE & GRADE RESOLUTION
     // -------------------------------------------------------------
     const totalScore = Math.round(transportScore + headersScore + mixedScore + cookieScore + isolationScore);
@@ -346,6 +388,10 @@ export class SecurityAnalyzer {
         high: highLeaks.length,
         hasLeaks: leaks.length > 0
       },
+      routes: routeReport.routes,
+      routeStats: routeReport.stats,
+      tokens: jwtReport.tokens,
+      sourceTree,
       findings: allFindings.map(f => ({
         ...f,
         id: f.id || f.header || (f.title ? f.title.replace(/\s+/g, '_').toUpperCase() : 'SECURITY_FINDING'),
@@ -398,6 +444,10 @@ export class SecurityAnalyzer {
       cookies: { issues: [] },
       leaks: [],
       leakStats: { total: 0, critical: 0, high: 0, hasLeaks: false },
+      routes: [],
+      routeStats: { total: 0, adminCount: 0, authCount: 0, paymentCount: 0, debugCount: 0, apiCount: 0, publicCount: 0 },
+      tokens: [],
+      sourceTree: null,
       findings: [],
       totalFindings: 0
     };

@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/amrnath005/Underweb/actions/workflows/ci.yml/badge.svg)](https://github.com/amrnath005/Underweb/actions)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-success.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Tests: 170 Passed](https://img.shields.io/badge/Tests-170%20Passed-emerald.svg)](tests/test-runner.js)
+[![Tests: 209 Passed](https://img.shields.io/badge/Tests-209%20Passed-emerald.svg)](tests/test-runner.js)
 [![Zero Telemetry](https://img.shields.io/badge/Telemetry-Zero%20(Local--First)-blueviolet.svg)](#privacy)
 [![Platform](https://img.shields.io/badge/Platform-Chrome%20%7C%20Edge%20%7C%20Firefox%20%7C%20Brave-informational.svg)](#try-it-in-30-seconds)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Web%20Playground-orange.svg)](https://amrnath005.github.io/Underweb/)
@@ -63,6 +63,9 @@ Most web technology detectors operate on superficial URL string matching or fabr
 - **Observable vs. Inferred Differentiation**: Directly observed technologies are clearly separated from architectural inferences. If a framework implies a parent (e.g. Next.js implying React), the inference relationship is explicitly labeled.
 - **No Fabricated Backend Claims**: Underweb will never guess invisible backend components. Unless an explicit response header or cookie provides proof, it will never claim to detect internal databases (PostgreSQL, MySQL, Redis, MongoDB) or internal orchestration (Docker, Kubernetes).
 - **Bug Bounty & In-Flight Secret Auditing**: Passively monitors network streams for exposed database connection URIs (PostgreSQL, MySQL, MongoDB, Redis), verbose SQL error stack traces (CWE-209), and cloud/payment/AI API credentials with Shannon entropy validation and one-click HackerOne, Bugcrowd, and OASIS SARIF v2.1.0 reporting.
+- **Source Map File Tree Reconstruction**: Reconstructs original project directory hierarchies from exposed source maps, highlights high-risk sensitive paths (`admin/`, `config/`, `.env`, credentials), and exports standard ASCII file trees.
+- **Client Route & Attack Surface Harvesting**: Passively discovers internal frontend routes and API endpoints bundled within client code, categorizing them by privilege tier (Admin, Debug, Auth, Payment, API).
+- **Client JWT & Auth Token Auditor**: Audits client-stored tokens across cookies, local storage, and Authorization headers, flagging insecure unsigned tokens (`alg: "none"`), expired sessions, and administrative privilege claims.
 - **WebAssembly & Source Map Auditing**: Deeply profiles `.wasm` binary payloads to attribute compiler toolchains (Rust `wasm-bindgen`, Go/TinyGo, Emscripten, AssemblyScript) while passively detecting exposed production source maps.
 - **One-Click Diagram & Vector Export**: Export active architecture dependency graphs directly into GitHub-ready Mermaid Markdown diagrams or standalone vector SVG files.
 - **Dual-Engine Browser Support**: Ships optimized Manifest V3 distributions for Chromium browsers (Chrome, Edge, Brave, Opera) and Mozilla Firefox (Gecko MV3).
@@ -85,11 +88,11 @@ Rust WASM   — OBSERVED — HIGH (95% confidence)
 
 ### Traceable Evidence Breakdown
 ```text
-[✓ Runtime Signal]   window.React detected (version 18.3.1); window.__APOLLO_CLIENT__ present
-[✓ Network Signal]   POST /api/v2/graphql with JSON payload containing query "GetCatalogData"
-[✓ Header Signal]    cf-ray: 8df4a1b0-ORD; server: cloudflare; x-powered-by: Fastify
-[✓ DOM Signal]       Tailwind utility token signatures detected across 42 DOM nodes
-[✓ WASM Signal]      wasm-bindgen naming convention (_bg.wasm) loaded at /pkg/engine_bg.wasm
+[+ Runtime Signal]   window.React detected (version 18.3.1); window.__APOLLO_CLIENT__ present
+[+ Network Signal]   POST /api/v2/graphql with JSON payload containing query "GetCatalogData"
+[+ Header Signal]    cf-ray: 8df4a1b0-ORD; server: cloudflare; x-powered-by: Fastify
+[+ DOM Signal]       Tailwind utility token signatures detected across 42 DOM nodes
+[+ WASM Signal]      wasm-bindgen naming convention (_bg.wasm) loaded at /pkg/engine_bg.wasm
 ```
 
 ---
@@ -196,6 +199,11 @@ npm run build:all       # Builds and verifies both targets
 | **API Cataloger** | REST endpoints, GraphQL operations, WebSocket handshake profiling | Active | 100% (Suites 2, 6) |
 | **Infrastructure Resolver** | ASN registry mapping, CDN edge headers, hosting detection | Active | 100% (Suite 5) |
 | **Security Analyzer** | 5-pillar scoring + passive source map exposure auditing | Active | 100% (Suites 16, 18) |
+| **Bug Bounty & Secret Auditor** | Database URIs, verbose SQL stack traces, API keys, and SARIF | Active | 100% (Suite 23) |
+| **Source Map Tree Reconstructor** | Full project directory tree recovery, sensitive target flags, and ASCII tree export | Active | 100% (Suite 24) |
+| **Route & Attack Surface Harvester** | Frontend routes, API endpoints, privilege tiers (Admin/Debug/Auth), and finding emission | Active | 100% (Suite 25) |
+| **JWT & Client Auth Auditor** | Offline JWT decoding, alg: "none" critical detection, roles, and expiration auditing | Active | 100% (Suite 26) |
+| **Reconnaissance Dossier Exporter** | One-click Markdown Bug Bounty Recon Dossier and OASIS SARIF v2.1.0 exports | Active | 100% (Suite 27) |
 | **Architecture Graph & Exporters** | Force-directed canvas, Dijkstra shortest path, Mermaid & SVG export | Active | 100% (Suites 3, 17) |
 | **WebAssembly Analyzer** | Binary inspection and toolchain attribution (Rust, Go, Emscripten, AssemblyScript) | Active | 100% (Suite 18) |
 | **Signature Validator CLI** | Strict observable evidence schema enforcement & duplicate prevention | Active | 100% (CI matrix) |
@@ -261,33 +269,46 @@ npm run build:all     # Validates AST syntax, module imports, and creates releas
 
 ```text
 --- Suite: Universal Fingerprint Detection Engine ---
-  ✔ PASS: Detects React from globals & DOM markers
-  ✔ PASS: Detects Tailwind CSS from DOM class utility marker
-  ✔ PASS: Detects Cloudflare from cf-ray and server headers
+  [PASS] Detects React from globals & DOM markers
+  [PASS] Detects Tailwind CSS from DOM class utility marker
+  [PASS] Detects Cloudflare from cf-ray and server headers
 ...
 --- Suite: Security Analyzer & Evidence-Driven Posture Scoring ---
-  ✔ PASS: HTTPS site is fully ASSESSED
-  ✔ PASS: REGRESSION FIXED: HTTPS site with passive HTTP image is NOT Grade F
-  ✔ PASS: Active mixed content (script) is flagged with HIGH severity
-  ✔ PASS: CSP frame-ancestors provides clickjacking protection
+  [PASS] HTTPS site is fully ASSESSED
+  [PASS] REGRESSION FIXED: HTTPS site with passive HTTP image is NOT Grade F
+  [PASS] Active mixed content (script) is flagged with HIGH severity
+  [PASS] CSP frame-ancestors provides clickjacking protection
 ...
 --- Suite: Architecture Graph Exporters (Mermaid & SVG) ---
-  ✔ PASS: toMermaid returns string
-  ✔ PASS: toSvg returns string
+  [PASS] toMermaid returns string
+  [PASS] toSvg returns string
 ...
 --- Suite: Deep WebAssembly & Sourcemap Telemetry ---
-  ✔ PASS: Detects base WebAssembly binary payload
-  ✔ PASS: Correctly attributes Rust (wasm-bindgen) toolchain
+  [PASS] Detects base WebAssembly binary payload
+  [PASS] Correctly attributes Rust (wasm-bindgen) toolchain
 ...
 --- Suite: Bug Bounty & Database/Secret Leak Scanner ---
-  ✔ PASS: Database URI masks password and preserves host/user
-  ✔ PASS: Detects PostgreSQL connection string
-  ✔ PASS: Detects verbose MySQL syntax error trace
-  ✔ PASS: Generates Markdown bug bounty report
-  ✔ PASS: SARIF document is version 2.1.0
+  [PASS] Database URI masks password and preserves host/user
+  [PASS] Detects PostgreSQL connection string
+  [PASS] Detects verbose MySQL syntax error trace
+  [PASS] Generates Markdown bug bounty report
+  [PASS] SARIF document is version 2.1.0
+...
+--- Suite: SourceTreeReconstructor & Project Directory Hierarchy ---
+  [PASS] Counts reconstructed files accurately
+  [PASS] Identifies all 3 sensitive files (admin, firebase, stripe)
+  [PASS] Renders valid ASCII tree structure
+...
+--- Suite: RouteHarvester & Client Attack Surface Harvesting ---
+  [PASS] Categorizes /admin/users as ADMIN
+  [PASS] Generates security finding for exposed administrative routes
+...
+--- Suite: JwtAuditor & Client Token Security Auditing ---
+  [PASS] Flags alg: "none" token
+  [PASS] Issues CRITICAL finding for unsigned alg: "none" JWT token
 
 ========================================
-Test Execution Finished: 170 Passed, 0 Failed
+Test Execution Finished: 209 Passed, 0 Failed
 ========================================
 ```
 

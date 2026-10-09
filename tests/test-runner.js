@@ -28,6 +28,9 @@ import { WasmDetector } from '../src/detection/wasm-detector.js';
 import { SourcemapDetector } from '../src/detection/sourcemap-detector.js';
 import { LeakDetector } from '../src/security/leak-detector.js';
 import { BountyReportBuilder } from '../src/security/bounty-report-builder.js';
+import { SourceTreeReconstructor } from '../src/security/source-tree-reconstructor.js';
+import { RouteHarvester } from '../src/security/route-harvester.js';
+import { JwtAuditor } from '../src/security/jwt-auditor.js';
 
 let passed = 0;
 let failed = 0;
@@ -932,6 +935,216 @@ suite('Bug Bounty & Database/Secret Leak Scanner', () => {
   assert(fullAuditReport.leakStats.hasLeaks === true, 'SecurityAnalyzer flags leak existence in leakStats');
   assert(fullAuditReport.leakStats.critical >= 2, 'SecurityAnalyzer records critical database leaks');
   assert(fullAuditReport.postureSummary.includes('Critical Secret/DB Leak'), 'Security posture reflects critical leak in summary');
+});
+
+// -------------------------------------------------------------
+// 24. Source Tree Reconstructor & Attack Surface Directory Analysis
+// -------------------------------------------------------------
+suite('SourceTreeReconstructor & Project Directory Hierarchy', () => {
+  // 1. Path normalization
+  assert(
+    SourceTreeReconstructor.normalizePath('webpack:///./src/components/AdminPanel.tsx') === 'src/components/AdminPanel.tsx',
+    'Normalizes webpack:///./ prefixes'
+  );
+  assert(
+    SourceTreeReconstructor.normalizePath('webpack://_N_E/./pages/api/auth.ts') === 'pages/api/auth.ts',
+    'Normalizes Next.js webpack prefixes'
+  );
+  assert(
+    SourceTreeReconstructor.normalizePath('vite:///src/utils/config.js') === 'src/utils/config.js',
+    'Normalizes Vite prefixes'
+  );
+  assert(
+    SourceTreeReconstructor.normalizePath('src/utils/../components/Button.jsx') === 'src/components/Button.jsx',
+    'Resolves relative traversal artifacts'
+  );
+
+  // 2. Sensitive path and filename identification
+  const adminCheck = SourceTreeReconstructor.assessSensitivity('src/admin/dashboard/View.vue');
+  assert(adminCheck.isSensitive && adminCheck.reason.includes('admin'), 'Identifies sensitive admin directory');
+
+  const envCheck = SourceTreeReconstructor.assessSensitivity('src/config/env.production.ts');
+  assert(envCheck.isSensitive && envCheck.reason.includes('env'), 'Identifies sensitive env config file');
+
+  const normalCheck = SourceTreeReconstructor.assessSensitivity('src/components/Header.tsx');
+  assert(!normalCheck.isSensitive, 'Leaves normal component files marked non-sensitive');
+
+  // 3. Full tree reconstruction
+  const sampleSources = [
+    'webpack:///./src/index.js',
+    'webpack:///./src/components/Button.js',
+    'webpack:///./src/admin/controllers/UserManagement.js',
+    'webpack:///./src/config/firebase.config.js',
+    'webpack:///./src/services/stripe.service.js'
+  ];
+
+  const treeResult = SourceTreeReconstructor.reconstruct(sampleSources);
+  assert(treeResult.totalFiles === 5, 'Counts reconstructed files accurately');
+  assert(treeResult.sensitiveFiles.length === 3, 'Identifies all 3 sensitive files (admin, firebase, stripe)');
+  assert(typeof treeResult.asciiTree === 'string' && treeResult.asciiTree.includes('src/'), 'Renders valid ASCII tree structure');
+  assert(treeResult.asciiTree.includes('[!]'), 'Decorates sensitive targets in ASCII tree');
+
+  // 4. Source map JSON reconstruction
+  const mockMapJson = JSON.stringify({
+    sources: [
+      'webpack:///./src/App.tsx',
+      'webpack:///./src/secrets/jwt.key.ts'
+    ]
+  });
+  const mapResult = SourceTreeReconstructor.reconstructFromSourceMap(mockMapJson);
+  assert(mapResult.totalFiles === 2, 'Reconstructs tree from raw source map JSON');
+  assert(mapResult.sensitiveFiles.some(f => f.name.includes('jwt')), 'Flags sensitive file in source map JSON');
+});
+
+// -------------------------------------------------------------
+// 25. Route Harvester & Client Attack Surface Harvesting
+// -------------------------------------------------------------
+suite('RouteHarvester & Client Attack Surface Harvesting', () => {
+  // 1. Route categorization
+  assert(RouteHarvester.categorizePath('/admin/users').category === 'ADMIN', 'Categorizes /admin/users as ADMIN');
+  assert(RouteHarvester.categorizePath('/admin/users').isPrivileged === true, 'Admin routes marked as privileged');
+  assert(RouteHarvester.categorizePath('/api/v1/users/list').category === 'API', 'Categorizes /api/ routes as API');
+  assert(RouteHarvester.categorizePath('/debug/metrics').category === 'DEBUG', 'Categorizes /debug/ as DEBUG');
+  assert(RouteHarvester.categorizePath('/auth/login').category === 'AUTH', 'Categorizes /auth/ as AUTH');
+  assert(RouteHarvester.categorizePath('/checkout/order').category === 'PAYMENT', 'Categorizes /checkout/ as PAYMENT');
+
+  // 2. Full harvest from session telemetry
+  const routeSession = {
+    url: 'https://app.target.com/dashboard',
+    primaryDomain: 'app.target.com',
+    requests: [
+      { url: 'https://app.target.com/api/v1/profile', method: 'GET' },
+      { url: 'https://app.target.com/admin/system/audit-log', method: 'GET' },
+      {
+        url: 'https://app.target.com/bundle.js',
+        method: 'GET',
+        responseBody: 'function test() { fetch("/admin/settings"); router.push("/debug/actuator"); }'
+      }
+    ],
+    runtime: {
+      apis: [{ url: 'https://app.target.com/api/graphql' }],
+      domMetrics: {
+        scripts: ['https://app.target.com/api/telemetry.js']
+      }
+    }
+  };
+
+  const harvestReport = RouteHarvester.harvest(routeSession);
+  assert(harvestReport.routes.length >= 4, 'Harvester collects routes from requests, response bodies, and APIs');
+  assert(harvestReport.stats.adminCount >= 2, 'Records multiple administrative routes');
+  assert(harvestReport.stats.debugCount >= 1, 'Records debug diagnostic endpoints');
+
+  // Check generated security findings
+  assert(
+    harvestReport.findings.some(f => f.id === 'EXPOSED_ADMIN_ROUTE_SURFACE'),
+    'Generates security finding for exposed administrative routes'
+  );
+  assert(
+    harvestReport.findings.some(f => f.id === 'EXPOSED_DEBUG_DIAGNOSTIC_ENDPOINT'),
+    'Generates high-severity finding for exposed debug actuator endpoints'
+  );
+});
+
+// -------------------------------------------------------------
+// 26. JwtAuditor & Client Token Security Auditing
+// -------------------------------------------------------------
+suite('JwtAuditor & Client Token Security Auditing', () => {
+  const makeToken = (header, payload, sig = 'sig123') => {
+    const h = Buffer.from(JSON.stringify(header)).toString('base64url');
+    const p = Buffer.from(JSON.stringify(payload)).toString('base64url');
+    return `${h}.${p}.${sig}`;
+  };
+
+  // 1. Insecure alg: "none" token
+  const noneToken = makeToken({ alg: 'none', typ: 'JWT' }, { sub: 'user_123', role: 'admin', exp: Math.floor(Date.now() / 1000) + 3600 }, '');
+  const parsedNone = JwtAuditor.parseToken(noneToken, 'Cookie');
+  assert(parsedNone.isNoneAlg === true, 'Flags alg: "none" token');
+  assert(parsedNone.algorithm === 'none', 'Records algorithm correctly');
+  assert(parsedNone.roles.includes('admin') || parsedNone.roles.includes('ADMIN'), 'Extracts administrative role');
+
+  // 2. Expired token
+  const expiredToken = makeToken({ alg: 'HS256', typ: 'JWT' }, { sub: 'old_user', exp: Math.floor(Date.now() / 1000) - 600 });
+  const parsedExpired = JwtAuditor.parseToken(expiredToken, 'localStorage');
+  assert(parsedExpired.isExpired === true, 'Detects expired JWT token');
+
+  // 3. Audit telemetry session
+  const jwtSession = {
+    url: 'https://auth.company.com/portal',
+    primaryDomain: 'auth.company.com',
+    runtime: {
+      storage: {
+        localStorageKeys: [`auth_token=${noneToken}`]
+      }
+    },
+    requests: [
+      {
+        url: 'https://auth.company.com/api/me',
+        requestHeaders: {
+          'authorization': `Bearer ${expiredToken}`
+        }
+      }
+    ]
+  };
+
+  const cookies = [
+    { name: 'session_jwt', value: noneToken }
+  ];
+
+  const jwtAudit = JwtAuditor.audit(jwtSession, cookies);
+  assert(jwtAudit.tokens.length >= 2, 'Discovers JWTs across cookies, storage, and headers');
+  assert(
+    jwtAudit.findings.some(f => f.id === 'INSECURE_JWT_ALGORITHM_NONE'),
+    'Issues CRITICAL finding for unsigned alg: "none" JWT token'
+  );
+  assert(
+    jwtAudit.findings.some(f => f.id === 'EXPIRED_JWT_TOKEN_RETAINED'),
+    'Issues finding for expired token retained in transit'
+  );
+});
+
+// -------------------------------------------------------------
+// 27. SecurityAnalyzer Recon Integration & Report Builder
+// -------------------------------------------------------------
+suite('SecurityAnalyzer Recon Integration & Dossier Exporter', () => {
+  const reconSession = {
+    url: 'https://corp-target.com/',
+    primaryDomain: 'corp-target.com',
+    primaryApex: 'corp-target.com',
+    sourceMapSources: [
+      'webpack:///./src/index.js',
+      'webpack:///./src/admin/SecuritySettings.vue',
+      'webpack:///./src/config/secrets.js'
+    ],
+    security: {
+      isHttps: true,
+      headers: {
+        'strict-transport-security': 'max-age=31536000'
+      }
+    },
+    requests: [
+      {
+        url: 'https://corp-target.com/api/v1/users',
+        method: 'GET'
+      },
+      {
+        url: 'https://corp-target.com/admin/login',
+        method: 'GET'
+      }
+    ]
+  };
+
+  const auditReport = SecurityAnalyzer.analyze(reconSession, []);
+  assert(auditReport.routes && auditReport.routes.length > 0, 'SecurityAnalyzer returns harvested routes');
+  assert(auditReport.sourceTree !== null, 'SecurityAnalyzer returns reconstructed source tree');
+  assert(auditReport.sourceTree.totalFiles === 3, 'Source tree contains all 3 mapped files');
+  assert(auditReport.sourceTree.sensitiveFiles.length === 2, 'Source tree identified 2 sensitive targets');
+
+  // Verify Bug Bounty Recon Report Generation
+  const dossierMd = BountyReportBuilder.generateReconReport(auditReport, { targetUrl: 'https://corp-target.com/' });
+  assert(typeof dossierMd === 'string' && dossierMd.includes('# [Reconnaissance Dossier]'), 'Generates Markdown reconnaissance dossier');
+  assert(dossierMd.includes('Discovered Attack Surface & Route Inventory'), 'Dossier includes route inventory section');
+  assert(dossierMd.includes('Reconstructed Project File System Tree'), 'Dossier includes ASCII file tree');
+  assert(dossierMd.includes('/admin/login'), 'Dossier lists discovered administrative route');
 });
 
 // -------------------------------------------------------------

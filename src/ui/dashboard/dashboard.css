@@ -1244,3 +1244,72 @@ html, body {
   word-break: break-all;
 }
 
+/* ============================================================
+   BUG BOUNTY & RECONNAISSANCE SUITE
+   ============================================================ */
+.route-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11.5px;
+}
+.route-table th {
+  text-align: left;
+  padding: 6px 10px;
+  background: var(--bg-muted);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-bottom: 1px solid var(--border);
+}
+.route-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+}
+.route-table tr:hover {
+  background: var(--color-bg-secondary, rgba(255, 255, 255, 0.03));
+}
+
+.token-card {
+  background: var(--bg-muted);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xs);
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  font-family: var(--font-sans);
+}
+.token-card.insecure-none {
+  border-left: 3px solid #f43f5e;
+}
+.token-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.tree-view-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.5;
+  background: var(--bg-muted);
+  padding: 12px;
+  border-radius: 4px;
+  overflow-x: auto;
+  white-space: pre;
+  color: var(--text-primary);
+}
+.tree-view-code .tree-sensitive {
+  color: #f43f5e;
+  font-weight: 700;
+  background: rgba(244, 63, 94, 0.12);
+  padding: 1px 4px;
+  border-radius: 2px;
+}
+.tree-view-code .tree-dir {
+  color: #38bdf8;
+  font-weight: 600;
+}
+

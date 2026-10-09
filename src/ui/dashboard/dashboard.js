@@ -21,6 +21,7 @@ import { TrackerDetector } from '../../privacy/tracker-detector.js';
 import { PrivacyAnalyzer } from '../../privacy/privacy-analyzer.js';
 import { SecurityAnalyzer } from '../../security/security-analyzer.js';
 import { BountyReportBuilder } from '../../security/bounty-report-builder.js';
+import { SourceTreeReconstructor } from '../../security/source-tree-reconstructor.js';
 import { KNOWLEDGE_BASE } from '../../../data/providers.js';
 import { StorageManager } from '../../storage/indexeddb.js';
 import { TimeUtils } from '../../utils/time-utils.js';
@@ -31,6 +32,9 @@ let currentTabId = null;
 let currentSession = null;
 let currentBountyMarkdown = '';
 let currentBountySarifObj = null;
+let currentSourceTree = null;
+let currentSecurityReport = null;
+let currentRoutesList = [];
 let graphRenderer = null;
 let activeGraph = null;
 let detectedTechs = [];
@@ -342,12 +346,89 @@ function setupActions() {
     downloadBlob(sarifJson, filename, 'application/json');
   });
 
+  // Bug Bounty Reconnaissance Report Dossier
+  addListener('btnExportReconReport', 'click', () => {
+    if (!currentSecurityReport) return;
+    const targetUrl = currentSession?.url || (currentSession?.primaryDomain ? `https://${currentSession.primaryDomain}` : 'https://underweb.local');
+    currentBountyMarkdown = BountyReportBuilder.generateReconReport(currentSecurityReport, { targetUrl });
+    currentBountySarifObj = BountyReportBuilder.toSarif(currentSecurityReport.findings || [], { targetUrl });
+    const modal = document.getElementById('bountyModal');
+    const title = document.getElementById('bountyModalTitle');
+    const content = document.getElementById('bountyModalContent');
+    if (title) title.textContent = `Bug Bounty Reconnaissance Dossier (${currentSecurityReport.mainUrl || targetUrl})`;
+    if (content) content.textContent = currentBountyMarkdown;
+    if (modal) modal.classList.add('active');
+  });
+
+  // Source Map Tree Controls
+  addListener('btnCopyAsciiTree', 'click', () => {
+    if (currentSourceTree && currentSourceTree.asciiTree && navigator.clipboard) {
+      navigator.clipboard.writeText(currentSourceTree.asciiTree).then(() => {
+        const btn = document.getElementById('btnCopyAsciiTree');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1800);
+        }
+      }).catch(() => {});
+    }
+  });
+
+  addListener('btnImportSourceMap', 'click', () => {
+    const smModal = document.getElementById('sourceMapModal');
+    if (smModal) smModal.classList.add('active');
+  });
+
+  addListener('closeSourceMapModalBtn', 'click', () => {
+    const smModal = document.getElementById('sourceMapModal');
+    if (smModal) smModal.classList.remove('active');
+  });
+
+  addListener('btnCancelSourceMap', 'click', () => {
+    const smModal = document.getElementById('sourceMapModal');
+    if (smModal) smModal.classList.remove('active');
+  });
+
+  const sourceMapModalEl = document.getElementById('sourceMapModal');
+  if (sourceMapModalEl) {
+    sourceMapModalEl.addEventListener('click', (e) => {
+      if (e.target === sourceMapModalEl) sourceMapModalEl.classList.remove('active');
+    });
+  }
+
+  addListener('btnParseSourceMap', 'click', () => {
+    const inputEl = document.getElementById('sourceMapInput');
+    if (inputEl && inputEl.value.trim()) {
+      try {
+        currentSourceTree = SourceTreeReconstructor.reconstructFromSourceMap(inputEl.value.trim());
+        renderSourceTree();
+        const smModal = document.getElementById('sourceMapModal');
+        if (smModal) smModal.classList.remove('active');
+        inputEl.value = '';
+      } catch (err) {
+        alert('Failed to reconstruct source tree: ' + err.message);
+      }
+    }
+  });
+
+  // Route Filters
+  const routesSearch = document.getElementById('routesSearchInput');
+  if (routesSearch) {
+    routesSearch.addEventListener('input', () => filterAndRenderRoutes());
+  }
+  const routesFilter = document.getElementById('routesCategoryFilter');
+  if (routesFilter) {
+    routesFilter.addEventListener('change', () => filterAndRenderRoutes());
+  }
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const modal = document.getElementById('evidenceModal');
       if (modal) modal.classList.remove('active');
       const bModal = document.getElementById('bountyModal');
       if (bModal) bModal.classList.remove('active');
+      const smModal = document.getElementById('sourceMapModal');
+      if (smModal) smModal.classList.remove('active');
     }
   });
 
@@ -1116,6 +1197,251 @@ function renderSecurityTab(cookies) {
       });
     }
   }
+
+  // Bug Bounty Reconnaissance State
+  currentSecurityReport = sec;
+  currentRoutesList = sec.routes || [];
+  if (sec.sourceTree && !currentSourceTree) {
+    currentSourceTree = sec.sourceTree;
+  }
+
+  // 12. Render Attack Surface & Routes
+  filterAndRenderRoutes();
+
+  // 13. Render JWT Tokens
+  renderTokensSection(sec.tokens || []);
+
+  // 14. Render Source Map Project Tree
+  renderSourceTree();
+}
+
+function filterAndRenderRoutes() {
+  const container = document.getElementById('routesContainer');
+  const countBadge = document.getElementById('routesCountBadge');
+  const adminBadge = document.getElementById('adminRoutesBadge');
+  const debugBadge = document.getElementById('debugRoutesBadge');
+  const searchInput = document.getElementById('routesSearchInput');
+  const catFilter = document.getElementById('routesCategoryFilter');
+  if (!container) return;
+
+  const routes = currentRoutesList || [];
+  const q = (searchInput?.value || '').trim().toLowerCase();
+  const selectedCat = catFilter?.value || 'ALL';
+
+  const adminCount = routes.filter(r => r.category === 'ADMIN').length;
+  const debugCount = routes.filter(r => r.category === 'DEBUG').length;
+
+  if (countBadge) {
+    countBadge.textContent = `${routes.length} Route${routes.length === 1 ? '' : 's'}`;
+    countBadge.className = `badge ${routes.length > 0 ? 'badge-cyan' : 'badge-neutral'}`;
+  }
+  if (adminBadge) {
+    adminBadge.style.display = adminCount > 0 ? 'inline-flex' : 'none';
+    adminBadge.textContent = `${adminCount} Admin`;
+  }
+  if (debugBadge) {
+    debugBadge.style.display = debugCount > 0 ? 'inline-flex' : 'none';
+    debugBadge.textContent = `${debugCount} Debug`;
+  }
+
+  const filtered = routes.filter(r => {
+    if (q && !r.path.toLowerCase().includes(q) && !(r.source || '').toLowerCase().includes(q)) return false;
+    if (selectedCat === 'PRIVILEGED') return r.isPrivileged;
+    if (selectedCat !== 'ALL' && r.category !== selectedCat) return false;
+    return true;
+  });
+
+  if (filtered.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding: 18px; text-align: center; color: var(--text-muted); font-size: 12px;">
+        ${routes.length === 0 ? 'No internal client routes or API endpoints harvested in passive telemetry yet.' : 'No routes matching filter criteria.'}
+      </div>
+    `;
+    return;
+  }
+
+  let html = `
+    <table class="route-table">
+      <thead>
+        <tr>
+          <th style="width: 90px;">Tier</th>
+          <th>Endpoint / Path</th>
+          <th style="width: 160px;">Classification</th>
+          <th style="width: 150px;">Origin</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  filtered.forEach(r => {
+    let catBadge = 'badge-slate';
+    if (r.category === 'ADMIN') catBadge = 'badge-rose';
+    else if (r.category === 'DEBUG') catBadge = 'badge-amber';
+    else if (r.category === 'AUTH') catBadge = 'badge-slate';
+    else if (r.category === 'API') catBadge = 'badge-cyan';
+
+    html += `
+      <tr>
+        <td><span class="badge ${catBadge}" style="font-size: 10px;">${escapeHtml(r.category)}</span></td>
+        <td>
+          <code style="font-size: 11.5px; color: ${r.isPrivileged ? '#f43f5e' : 'var(--text-primary)'}; font-weight: ${r.isPrivileged ? '700' : '500'};">
+            ${escapeHtml(r.path)}
+          </code>
+        </td>
+        <td style="font-size: 11px; color: var(--text-secondary);">${escapeHtml(r.reason || '')}</td>
+        <td style="font-size: 10.5px; color: var(--text-muted); font-family: var(--font-mono);">${escapeHtml(r.source || 'Script')}</td>
+      </tr>
+    `;
+  });
+
+  html += `</tbody></table>`;
+  container.innerHTML = html;
+}
+
+function renderTokensSection(tokens = []) {
+  const container = document.getElementById('tokensContainer');
+  const countBadge = document.getElementById('tokensCountBadge');
+  const vulnBadge = document.getElementById('tokensVulnBadge');
+  if (!container) return;
+
+  const hasInsecureNone = tokens.some(t => t.isNoneAlg);
+
+  if (countBadge) {
+    countBadge.textContent = `${tokens.length} Token${tokens.length === 1 ? '' : 's'}`;
+    countBadge.className = `badge ${tokens.length > 0 ? 'badge-slate' : 'badge-neutral'}`;
+  }
+  if (vulnBadge) {
+    vulnBadge.style.display = hasInsecureNone ? 'inline-flex' : 'none';
+  }
+
+  if (tokens.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state" style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 12px;">
+        Zero client-stored JWT tokens observed in cookies, local storage, or in-flight authorization headers.
+      </div>
+    `;
+    return;
+  }
+
+  container.innerHTML = '';
+  tokens.forEach((t, idx) => {
+    const card = document.createElement('div');
+    card.className = `token-card ${t.isNoneAlg ? 'insecure-none' : ''}`;
+
+    let algBadge = 'badge-slate';
+    if (t.isNoneAlg) algBadge = 'badge-rose';
+    else if (t.algorithm.startsWith('RS') || t.algorithm.startsWith('ES')) algBadge = 'badge-emerald';
+    else if (t.algorithm.startsWith('HS')) algBadge = 'badge-amber';
+
+    const expBadge = t.isExpired ? '<span class="badge badge-rose">Expired</span>' : '<span class="badge badge-emerald">Valid</span>';
+
+    card.innerHTML = `
+      <div class="token-card-header">
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+          <span style="font-weight: 700; font-size: 12px; color: var(--text-primary);">${escapeHtml(t.location)}</span>
+          <span class="badge ${algBadge}" style="font-size: 10px;">alg: ${escapeHtml(t.algorithm)}</span>
+          ${t.isNoneAlg ? '<span class="badge badge-rose" style="font-size: 10px; font-weight: 700;">CRITICAL: alg "none"</span>' : ''}
+          ${expBadge}
+          ${t.roles.includes('ADMIN') ? '<span class="badge badge-rose" style="font-size: 10px;">ADMIN ROLE CLAIM</span>' : ''}
+        </div>
+        <button class="btn btn-outline btn-xs btn-copy-token" style="font-size: 10px; padding: 2px 8px;">Copy Token</button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 8px; font-size: 11px; margin-top: 8px;">
+        <div><span style="color: var(--text-muted);">Subject / User ID:</span> <strong>${escapeHtml(t.userId || 'N/A')}</strong></div>
+        <div><span style="color: var(--text-muted);">Roles / Permissions:</span> <strong>${escapeHtml(t.roles.length > 0 ? t.roles.join(', ') : 'None')}</strong></div>
+        <div><span style="color: var(--text-muted);">Issuer:</span> <strong>${escapeHtml(t.issuer || 'N/A')}</strong></div>
+        <div><span style="color: var(--text-muted);">Audience:</span> <strong>${escapeHtml(t.audience || 'N/A')}</strong></div>
+      </div>
+
+      <div style="margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap;">
+        <details style="flex: 1; min-width: 200px; background: var(--bg-base); padding: 6px 8px; border-radius: 4px; font-size: 11px;">
+          <summary style="cursor: pointer; color: var(--accent); font-family: var(--font-mono); font-size: 10.5px;">Decoded Header</summary>
+          <pre style="margin-top: 4px; font-family: var(--font-mono); font-size: 10px; overflow-x: auto; color: var(--text-secondary);">${escapeHtml(JSON.stringify(t.header, null, 2))}</pre>
+        </details>
+        <details style="flex: 2; min-width: 240px; background: var(--bg-base); padding: 6px 8px; border-radius: 4px; font-size: 11px;">
+          <summary style="cursor: pointer; color: var(--accent); font-family: var(--font-mono); font-size: 10.5px;">Decoded Payload Claims</summary>
+          <pre style="margin-top: 4px; font-family: var(--font-mono); font-size: 10px; overflow-x: auto; color: var(--text-secondary);">${escapeHtml(JSON.stringify(t.payload, null, 2))}</pre>
+        </details>
+      </div>
+
+      <div style="margin-top: 8px; font-family: var(--font-mono); font-size: 10.5px; color: var(--text-muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+        Masked: <code>${escapeHtml(t.maskedToken)}</code>
+      </div>
+    `;
+
+    const copyBtn = card.querySelector('.btn-copy-token');
+    if (copyBtn) {
+      copyBtn.addEventListener('click', () => {
+        if (navigator.clipboard) {
+          navigator.clipboard.writeText(t.token).then(() => {
+            copyBtn.textContent = 'Copied!';
+            setTimeout(() => { copyBtn.textContent = 'Copy Token'; }, 1500);
+          });
+        }
+      });
+    }
+
+    container.appendChild(card);
+  });
+}
+
+function renderSourceTree() {
+  const container = document.getElementById('projectTreeContainer');
+  const statsBadge = document.getElementById('treeStatsBadge');
+  const sensitiveBadge = document.getElementById('treeSensitiveBadge');
+  const copyBtn = document.getElementById('btnCopyAsciiTree');
+  if (!container) return;
+
+  const tree = currentSourceTree;
+  if (!tree || !tree.asciiTree) {
+    if (statsBadge) {
+      statsBadge.textContent = 'No Source Map';
+      statsBadge.className = 'badge badge-neutral';
+    }
+    if (sensitiveBadge) sensitiveBadge.style.display = 'none';
+    if (copyBtn) copyBtn.style.display = 'none';
+
+    container.innerHTML = `
+      <div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-muted); font-size: 12px;">
+        No production source map detected yet. Click <strong>"Paste / Upload .map"</strong> above to reconstruct the complete original codebase directory tree and discover sensitive internal files.
+      </div>
+    `;
+    return;
+  }
+
+  if (statsBadge) {
+    statsBadge.textContent = `${tree.totalFiles} Files, ${tree.totalDirectories} Dirs`;
+    statsBadge.className = 'badge badge-emerald';
+  }
+  if (sensitiveBadge) {
+    const count = tree.sensitiveFiles ? tree.sensitiveFiles.length : 0;
+    if (count > 0) {
+      sensitiveBadge.style.display = 'inline-flex';
+      sensitiveBadge.textContent = `${count} Sensitive Target${count > 1 ? 's' : ''}`;
+    } else {
+      sensitiveBadge.style.display = 'none';
+    }
+  }
+  if (copyBtn) {
+    copyBtn.style.display = 'inline-flex';
+  }
+
+  // Format ascii tree with color spans
+  const lines = tree.asciiTree.split('\n');
+  const formattedLines = lines.map(line => {
+    const escaped = escapeHtml(line);
+    if (line.includes('[!]')) {
+      return `<span class="tree-sensitive">${escaped}</span>`;
+    } else if (line.endsWith('/')) {
+      return `<span class="tree-dir">${escaped}</span>`;
+    }
+    return escaped;
+  });
+
+  container.innerHTML = `
+    <pre class="tree-view-code">${formattedLines.join('\n')}</pre>
+  `;
 }
 
 function showBountyModal(singleLeak, allLeaks) {

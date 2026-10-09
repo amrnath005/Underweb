@@ -15,14 +15,31 @@ All notable changes to the **Underweb** project will be documented in this file.
   - Safe credential masking by default (`maskSecret`) protecting researcher privacy with a granular UI reveal/mask toggle.
 - **One-Click Bug Bounty Report Generator (`BountyReportBuilder`)**:
   - Instant submission-ready HackerOne and Bugcrowd Markdown reports including CVSS v3.1 scores, redacted proof-of-concept evidence, technical impact assessment, and remediation actions.
+  - Comprehensive Bug Bounty Reconnaissance Dossier exporter (`generateReconReport`) compiling attack surface routes, client auth tokens, reconstructed source map trees, and findings into a professional markdown dossier.
   - OASIS SARIF v2.1.0 document exporter for automated ingestion into GitHub Code Scanning and enterprise AppSec pipelines.
+- **Source Map Project Tree Reconstructor (`SourceTreeReconstructor`)**:
+  - Reconstructs complete original source code directory hierarchies from exposed JavaScript source maps (`.map` assets, webpack, vite, and turbopack bundles).
+  - Normalizes bundler path prefixes (`webpack:///./`, `webpack://_N_E/`, `vite:///`, relative traversal artifacts).
+  - Automatically assesses sensitivity, flagging high-value directories (`admin/`, `config/`, `.env`, `secrets/`) and files (`firebase`, `aws`, `stripe`, credentials, auth tokens).
+  - Generates standard ASCII file trees (`tree` format) with one-click clipboard copy.
+  - Interactive "Paste / Upload .map" modal in the Dashboard allowing instant offline parsing of raw `.map` JSON or source path lists.
+- **Client Route & Attack Surface Harvester (`RouteHarvester`)**:
+  - Passively extracts frontend SPA route declarations, internal administrative paths, and API endpoints from client scripts, network requests, and DOM metadata.
+  - Categorizes routes into privilege tiers: `ADMIN`, `DEBUG`, `AUTH`, `PAYMENT`, `API`, and `PUBLIC`.
+  - Automatically emits actionable security findings for exposed administrative interfaces (`EXPOSED_ADMIN_ROUTE_SURFACE`) and diagnostic consoles (`EXPOSED_DEBUG_DIAGNOSTIC_ENDPOINT`).
+  - Interactive searchable and filterable table in Dashboard with category badges and privilege indicators.
+- **Client JWT & Authentication Token Auditor (`JwtAuditor`)**:
+  - Offline inspection and Base64Url decoding of JWT tokens discovered in cookies, local storage, and Authorization headers.
+  - Identifies critical unsigned tokens (`alg: "none"`) rated CRITICAL (CVSS 9.8, CWE-327) and flags administrative role claims (`ADMIN`, `isAdmin`).
+  - Real-time expiration audit detecting retained stale auth tokens (CWE-613).
+  - Interactive token inspector displaying decoded headers, decoded payload claims, expiry status, and masked token with copy option.
 - **Enhanced UI Telemetry Badges & Modals**:
   - Topbar alert badge in Dashboard indicating live leak counts and scrolling directly into the bounty auditor.
-  - Dedicated Bug Bounty & Leaked Secrets Auditor section in the Security Posture tab.
+  - Dedicated Bug Bounty & Leaked Secrets Auditor, Attack Surface & Route Harvester, Client JWT Auditor, and Source Map Project Tree cards in the Security Posture tab.
   - Interactive Bug Bounty submission modal with Markdown copy, `.md` download, and `.sarif` download capabilities.
   - Real-time leak warning indicator on the extension popup for immediate awareness.
-- **Expanded Test Suite (Suite 19)**:
-  - 23 new unit test assertions validating Shannon entropy calculation, database masking, pattern recognition, false positive suppression, HackerOne report drafting, and SARIF document generation (170 passed tests across 19 suites).
+- **Expanded Test Suite (Suites 24-27)**:
+  - 39 new unit test assertions validating directory hierarchy reconstruction, route categorization, JWT algorithm verification, and recon dossier generation (209 passed tests total across all suites, 0 failures).
 
 ---
 
