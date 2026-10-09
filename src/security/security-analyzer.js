@@ -8,6 +8,7 @@ import { MixedContentDetector, MIXED_CONTENT_TYPES } from './mixed-content.js';
 import { CorsAnalyzer } from './cors-analyzer.js';
 import { CookieAnalyzer } from '../privacy/cookie-analyzer.js';
 import { SourcemapDetector } from '../detection/sourcemap-detector.js';
+import { LeakDetector } from './leak-detector.js';
 import { UrlUtils } from '../utils/url-utils.js';
 
 export const SECURITY_STATES = {
@@ -249,6 +250,25 @@ export class SecurityAnalyzer {
     });
 
     // -------------------------------------------------------------
+    // CATEGORY 7: In-Flight Database Leaks, Secrets & Error Traces
+    // -------------------------------------------------------------
+    const leaks = LeakDetector.detect(sessionSnapshot);
+    leaks.forEach(leak => {
+      allFindings.push({
+        ...leak,
+        category: 'LEAKS',
+        header: 'Leaked Credentials & Data',
+        isMainDocument: false,
+        isFirstParty: true,
+        scoreImpact: leak.severity === 'CRITICAL' ? -15 : leak.severity === 'HIGH' ? -10 : -5,
+        scoreDeduction: leak.severity === 'CRITICAL' ? 15 : leak.severity === 'HIGH' ? 10 : 5
+      });
+    });
+
+    const criticalLeaks = leaks.filter(l => l.severity === 'CRITICAL');
+    const highLeaks = leaks.filter(l => l.severity === 'HIGH');
+
+    // -------------------------------------------------------------
     // TOTAL SCORE & GRADE RESOLUTION
     // -------------------------------------------------------------
     const totalScore = Math.round(transportScore + headersScore + mixedScore + cookieScore + isolationScore);
@@ -263,7 +283,9 @@ export class SecurityAnalyzer {
 
     // Student-friendly explanation
     let postureSummary = 'Security Posture: Excellent';
-    if (state === SECURITY_STATES.PARTIALLY_ASSESSED) {
+    if (criticalLeaks.length > 0) {
+      postureSummary = `Security Posture: Critical Risk (${criticalLeaks.length} Critical Secret/DB Leak${criticalLeaks.length > 1 ? 's' : ''})`;
+    } else if (state === SECURITY_STATES.PARTIALLY_ASSESSED) {
       postureSummary = 'Security Posture: Partially Assessed (Awaiting Document Headers)';
     } else if (grade === 'A') {
       postureSummary = 'Security Posture: Excellent (Defense-in-depth active)';
@@ -317,6 +339,13 @@ export class SecurityAnalyzer {
       mixedContent: mixedReport,
       cors: corsReport,
       cookies: cookieReport,
+      leaks,
+      leakStats: {
+        total: leaks.length,
+        critical: criticalLeaks.length,
+        high: highLeaks.length,
+        hasLeaks: leaks.length > 0
+      },
       findings: allFindings.map(f => ({
         ...f,
         id: f.id || f.header || (f.title ? f.title.replace(/\s+/g, '_').toUpperCase() : 'SECURITY_FINDING'),
@@ -367,6 +396,8 @@ export class SecurityAnalyzer {
       mixedContent: [],
       cors: { issues: [] },
       cookies: { issues: [] },
+      leaks: [],
+      leakStats: { total: 0, critical: 0, high: 0, hasLeaks: false },
       findings: [],
       totalFindings: 0
     };

@@ -5,6 +5,7 @@
 })();
 
 import { FingerprintEngine } from '../../detection/fingerprint-engine.js';
+import { LeakDetector } from '../../security/leak-detector.js';
 
 function createEmptySession(tabId, url = '', title = '') {
   let host = '';
@@ -48,6 +49,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   const siteProtocol = document.getElementById('siteProtocol');
   const siteHostname = document.getElementById('siteHostname');
   const securityBadge = document.getElementById('securityBadge');
+  const popupLeakBadge = document.getElementById('popupLeakBadge');
 
   const totalRequests = document.getElementById('totalRequests');
   const domainsCount = document.getElementById('domainsCount');
@@ -148,6 +150,26 @@ document.addEventListener('DOMContentLoaded', async () => {
     const isHttps = session.security.isHttps;
     securityBadge.textContent = isHttps ? 'HTTPS' : 'INSECURE';
     securityBadge.className = `badge ${isHttps ? 'badge-emerald' : 'badge-rose'}`;
+
+    // In-Flight Database/Secret Leaks
+    const detectedLeaks = LeakDetector.detect(session);
+    if (popupLeakBadge) {
+      if (detectedLeaks.length > 0) {
+        popupLeakBadge.style.display = 'inline-block';
+        popupLeakBadge.textContent = `${detectedLeaks.length} Leak${detectedLeaks.length > 1 ? 's' : ''}`;
+        popupLeakBadge.onclick = (e) => {
+          e.stopPropagation();
+          if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.getURL) {
+            const dashboardUrl = chrome.runtime.getURL(`src/ui/dashboard/dashboard.html?tab=tab-security${activeTab ? `&tabId=${activeTab.id}` : ''}`);
+            chrome.tabs.create({ url: dashboardUrl });
+          } else {
+            window.open('../dashboard/dashboard.html?tab=tab-security', '_blank');
+          }
+        };
+      } else {
+        popupLeakBadge.style.display = 'none';
+      }
+    }
 
     if (session.protocols && session.protocols.length > 0) {
       protocolBadge.textContent = session.protocols[0].toUpperCase();

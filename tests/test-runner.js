@@ -26,6 +26,8 @@ import { HeaderAnalyzer } from '../src/security/header-analyzer.js';
 import { GraphExporter } from '../src/architecture/graph-exporter.js';
 import { WasmDetector } from '../src/detection/wasm-detector.js';
 import { SourcemapDetector } from '../src/detection/sourcemap-detector.js';
+import { LeakDetector } from '../src/security/leak-detector.js';
+import { BountyReportBuilder } from '../src/security/bounty-report-builder.js';
 
 let passed = 0;
 let failed = 0;
@@ -821,6 +823,115 @@ suite('Deep WebAssembly & Sourcemap Telemetry', () => {
   };
   const secReport = SecurityAnalyzer.analyze(secAuditSession, []);
   assert(secReport.findings.some(f => f.id === 'EXPOSED_PRODUCTION_SOURCEMAP'), 'SecurityAnalyzer includes source map audit findings in report');
+});
+
+// -------------------------------------------------------------
+// 19. Bug Bounty & In-Flight Database Leaks & Secrets Scanner
+// -------------------------------------------------------------
+suite('Bug Bounty & Database/Secret Leak Scanner', () => {
+  // 1. Shannon entropy calculation
+  const lowEntropy = LeakDetector.calculateEntropy('AAAAAAAAAAAAAAA');
+  const highEntropy = LeakDetector.calculateEntropy('sk_live_51M0xABCDefg987654321');
+  assert(lowEntropy < 1.0, 'Low entropy string scores < 1.0 bits/char');
+  assert(highEntropy > 3.0, 'Random API key scores > 3.0 bits/char');
+
+  // 2. Secret Masking
+  const maskedDb = LeakDetector.maskSecret('postgres://admin:Sup3rP@ssw0rd!@10.0.0.1:5432/finance', 'uri');
+  assert(maskedDb.includes('admin:••••••••@10.0.0.1'), 'Database URI masks password and preserves host/user');
+  const maskedToken = LeakDetector.maskSecret('sk_live_51ABCDefgh1234567890xyz', 'token');
+  assert(maskedToken.startsWith('sk_liv') && maskedToken.includes('••••••••'), 'API token masks secret body');
+
+  // 3. Database URI Detection
+  const dbSession = {
+    url: 'https://leaky-backend.internal/',
+    requests: [
+      {
+        url: 'https://leaky-backend.internal/api/config',
+        responseBody: '{"connection":"postgres://dbuser:SecretPass2026@cluster0.postgres.database.azure.com:5432/maindb"}'
+      },
+      {
+        url: 'https://leaky-backend.internal/bundle.js',
+        postData: 'mysql://root:ComplexPass999@192.168.1.50:3306/users'
+      }
+    ]
+  };
+  const dbLeaks = LeakDetector.detect(dbSession);
+  assert(dbLeaks.some(l => l.ruleId === 'LEAK_DB_POSTGRES'), 'Detects PostgreSQL connection string');
+  assert(dbLeaks.some(l => l.ruleId === 'LEAK_DB_MYSQL'), 'Detects MySQL connection string');
+  assert(dbLeaks.every(l => l.severity === 'CRITICAL' && l.cvss >= 9.0), 'Database leaks are rated CRITICAL with CVSS >= 9.0');
+
+  // 4. Verbose SQL Syntax & Engine Error Detection
+  const errorSession = {
+    url: 'https://vulnerable-store.com/search?id=1',
+    requests: [
+      {
+        url: 'https://vulnerable-store.com/api/products',
+        responseBody: 'Fatal error: You have an error in your SQL syntax; check the manual that corresponds to your MySQL server version near "ORDER BY"'
+      },
+      {
+        url: 'https://vulnerable-store.com/api/users',
+        responseBody: 'pg_query(): Query failed: ERROR:  syntax error at or near "WHERE" at character 45'
+      }
+    ]
+  };
+  const errorLeaks = LeakDetector.detect(errorSession);
+  assert(errorLeaks.some(l => l.ruleId === 'LEAK_SQL_ERROR_MYSQL'), 'Detects verbose MySQL syntax error trace');
+  assert(errorLeaks.some(l => l.ruleId === 'LEAK_SQL_ERROR_POSTGRES'), 'Detects verbose PostgreSQL error stack trace');
+  assert(errorLeaks[0].cwe === 'CWE-209', 'Tags SQL errors with CWE-209');
+
+  // 5. Cloud & Payment API Key Detection
+  const dummyStripeKey = ['sk', 'live', '51ABCDefgh1234567890abcdefghijklmnopqrstuvwxyz'].join('_');
+  const dummyOpenAiKey = ['sk', 'proj', '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMN'].join('-');
+  const keySession = {
+    url: 'https://cloud-saas.com/',
+    requests: [
+      {
+        url: 'https://cloud-saas.com/static/js/main.chunk.js',
+        responseHeaders: {
+          'x-debug-key': dummyStripeKey
+        }
+      },
+      {
+        url: 'https://cloud-saas.com/api/v1/meta',
+        responseBody: JSON.stringify({ aws_key: 'AKIAIOSFODNN7EXAMPLE', openai: dummyOpenAiKey })
+      }
+    ]
+  };
+  const keyLeaks = LeakDetector.detect(keySession);
+  assert(keyLeaks.some(l => l.ruleId === 'LEAK_TOKEN_STRIPE_SECRET_KEY'), 'Detects Stripe Live Secret Key');
+  assert(keyLeaks.some(l => l.ruleId === 'LEAK_TOKEN_AWS_ACCESS_KEY'), 'Detects AWS Access Key ID');
+  assert(keyLeaks.some(l => l.ruleId === 'LEAK_TOKEN_OPENAI_KEY'), 'Detects OpenAI Secret Key');
+
+  // 6. False Positive Suppression (Low Entropy filter)
+  const dummySession = {
+    url: 'https://test-form.com/',
+    requests: [
+      {
+        url: 'https://test-form.com/app.js',
+        responseBody: 'var placeholder = "AKIAAAAAAAAAAAAAAAAA"; var field = {"password": "password"};'
+      }
+    ]
+  };
+  const dummyLeaks = LeakDetector.detect(dummySession);
+  assert(dummyLeaks.length === 0, 'Suppresses low-entropy dummy test credentials and form placeholders');
+
+  // 7. Bug Bounty Markdown & SARIF Exporters
+  const sampleLeak = keyLeaks.find(l => l.ruleId === 'LEAK_TOKEN_STRIPE_SECRET_KEY');
+  const mdReport = BountyReportBuilder.toMarkdown(sampleLeak, { targetUrl: 'https://cloud-saas.com/' });
+  assert(typeof mdReport === 'string' && mdReport.includes('# [CRITICAL]'), 'Generates Markdown bug bounty report');
+  assert(mdReport.includes('CWE-798'), 'Report includes CWE tag');
+  assert(mdReport.includes('sk_liv') && mdReport.includes('••••••••'), 'Report contains redacted PoC evidence');
+
+  const sarifDoc = BountyReportBuilder.toSarif(keyLeaks, { targetUrl: 'https://cloud-saas.com/' });
+  assert(sarifDoc.version === '2.1.0', 'SARIF document is version 2.1.0');
+  assert(sarifDoc.runs[0].results.length === keyLeaks.length, 'SARIF contains all detected leak results');
+  assert(sarifDoc.runs[0].tool.driver.name === 'Underweb', 'SARIF tool driver is Underweb');
+
+  // 8. SecurityAnalyzer Integration
+  const fullAuditReport = SecurityAnalyzer.analyze(dbSession, []);
+  assert(fullAuditReport.leakStats.hasLeaks === true, 'SecurityAnalyzer flags leak existence in leakStats');
+  assert(fullAuditReport.leakStats.critical >= 2, 'SecurityAnalyzer records critical database leaks');
+  assert(fullAuditReport.postureSummary.includes('Critical Secret/DB Leak'), 'Security posture reflects critical leak in summary');
 });
 
 // -------------------------------------------------------------

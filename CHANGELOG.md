@@ -4,6 +4,28 @@ All notable changes to the **Underweb** project will be documented in this file.
 
 ---
 
+## [1.3.0] - 2026-10-09
+
+### Added
+- **Bug Bounty & In-Flight Secret Scanner (`LeakDetector`)**:
+  - Passive client-side inspection for database connection string leaks (`postgres://`, `mysql://`, `mongodb://`, `redis://`) across in-flight HTTP responses, scripts, and runtime telemetry.
+  - Verbose SQL database error stack traces and internal query exception leaks (MySQL, PostgreSQL, SQLite, MSSQL) mapped to CWE-209.
+  - Cloud, payment, and AI API key detection (Stripe live keys, AWS Access Key IDs, GitHub PATs, OpenAI, Anthropic, Google Gemini API keys).
+  - Shannon entropy randomness calculation (`calculateEntropy`) to eliminate false positives from static form labels and mock placeholders.
+  - Safe credential masking by default (`maskSecret`) protecting researcher privacy with a granular UI reveal/mask toggle.
+- **One-Click Bug Bounty Report Generator (`BountyReportBuilder`)**:
+  - Instant submission-ready HackerOne and Bugcrowd Markdown reports including CVSS v3.1 scores, redacted proof-of-concept evidence, technical impact assessment, and remediation actions.
+  - OASIS SARIF v2.1.0 document exporter for automated ingestion into GitHub Code Scanning and enterprise AppSec pipelines.
+- **Enhanced UI Telemetry Badges & Modals**:
+  - Topbar alert badge in Dashboard indicating live leak counts and scrolling directly into the bounty auditor.
+  - Dedicated Bug Bounty & Leaked Secrets Auditor section in the Security Posture tab.
+  - Interactive Bug Bounty submission modal with Markdown copy, `.md` download, and `.sarif` download capabilities.
+  - Real-time leak warning indicator on the extension popup for immediate awareness.
+- **Expanded Test Suite (Suite 19)**:
+  - 23 new unit test assertions validating Shannon entropy calculation, database masking, pattern recognition, false positive suppression, HackerOne report drafting, and SARIF document generation (170 passed tests across 19 suites).
+
+---
+
 ## [1.2.0] - 2026-09-25
 
 ### Added

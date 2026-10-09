@@ -20,6 +20,7 @@ import { ApiDetector } from '../../network/api-detector.js';
 import { TrackerDetector } from '../../privacy/tracker-detector.js';
 import { PrivacyAnalyzer } from '../../privacy/privacy-analyzer.js';
 import { SecurityAnalyzer } from '../../security/security-analyzer.js';
+import { BountyReportBuilder } from '../../security/bounty-report-builder.js';
 import { KNOWLEDGE_BASE } from '../../../data/providers.js';
 import { StorageManager } from '../../storage/indexeddb.js';
 import { TimeUtils } from '../../utils/time-utils.js';
@@ -28,6 +29,8 @@ import { DEMO_SNAPSHOTS } from '../../../data/demo-snapshots.js';
 
 let currentTabId = null;
 let currentSession = null;
+let currentBountyMarkdown = '';
+let currentBountySarifObj = null;
 let graphRenderer = null;
 let activeGraph = null;
 let detectedTechs = [];
@@ -121,6 +124,11 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // 2. Initialize Navigation
   setupNavigation();
+  const tabParam = urlParams.get('tab');
+  if (tabParam) {
+    const targetNav = document.querySelector(`.nav-item[data-tab="${tabParam}"]`);
+    if (targetNav) targetNav.click();
+  }
 
   // 3. Initialize Graph Canvas
   const canvas = document.getElementById('architectureCanvas');
@@ -295,10 +303,51 @@ function setupActions() {
     });
   }
 
+  // Bug Bounty Modal Listeners
+  addListener('closeBountyModalBtn', 'click', () => {
+    const modal = document.getElementById('bountyModal');
+    if (modal) modal.classList.remove('active');
+  });
+
+  const bountyModalEl = document.getElementById('bountyModal');
+  if (bountyModalEl) {
+    bountyModalEl.addEventListener('click', (e) => {
+      if (e.target === bountyModalEl) bountyModalEl.classList.remove('active');
+    });
+  }
+
+  addListener('btnCopyBountyMarkdown', 'click', () => {
+    if (navigator.clipboard && navigator.clipboard.writeText && currentBountyMarkdown) {
+      navigator.clipboard.writeText(currentBountyMarkdown).then(() => {
+        const btn = document.getElementById('btnCopyBountyMarkdown');
+        if (btn) {
+          const orig = btn.textContent;
+          btn.textContent = 'Copied!';
+          setTimeout(() => { btn.textContent = orig; }, 1800);
+        }
+      }).catch(() => {});
+    }
+  });
+
+  addListener('btnDownloadBountyMarkdown', 'click', () => {
+    if (!currentBountyMarkdown) return;
+    const filename = `underweb-bounty-${currentSession?.primaryDomain || 'report'}.md`;
+    downloadBlob(currentBountyMarkdown, filename, 'text/markdown');
+  });
+
+  addListener('btnDownloadBountySarif', 'click', () => {
+    if (!currentBountySarifObj) return;
+    const sarifJson = JSON.stringify(currentBountySarifObj, null, 2);
+    const filename = `underweb-bounty-${currentSession?.primaryDomain || 'report'}.sarif`;
+    downloadBlob(sarifJson, filename, 'application/json');
+  });
+
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       const modal = document.getElementById('evidenceModal');
       if (modal) modal.classList.remove('active');
+      const bModal = document.getElementById('bountyModal');
+      if (bModal) bModal.classList.remove('active');
     }
   });
 
@@ -945,6 +994,157 @@ function renderSecurityTab(cookies) {
       });
     }
   }
+
+  // 10. Topbar Leak Badge
+  const topbarLeakBadge = document.getElementById('topbarLeakBadge');
+  const topbarLeakText = document.getElementById('topbarLeakText');
+  if (topbarLeakBadge && topbarLeakText) {
+    if (sec.leakStats && sec.leakStats.hasLeaks) {
+      topbarLeakBadge.style.display = 'inline-flex';
+      topbarLeakText.textContent = `${sec.leakStats.total} Leak${sec.leakStats.total === 1 ? '' : 's'}`;
+      topbarLeakBadge.onclick = () => {
+        const secNav = document.querySelector('.nav-item[data-tab="tab-security"]');
+        if (secNav) secNav.click();
+        const bountyCard = document.getElementById('bountyCard');
+        if (bountyCard) bountyCard.scrollIntoView({ behavior: 'smooth' });
+      };
+    } else {
+      topbarLeakBadge.style.display = 'none';
+    }
+  }
+
+  // 11. Bug Bounty & Leaks Section
+  const bountyBadge = document.getElementById('bountyStatusBadge');
+  const exportBountyBtn = document.getElementById('btnExportBountyReport');
+  const leaksContainer = document.getElementById('bountyLeaksContainer');
+
+  if (bountyBadge) {
+    if (sec.leakStats && sec.leakStats.hasLeaks) {
+      bountyBadge.className = 'badge badge-rose';
+      bountyBadge.textContent = `${sec.leakStats.total} Leak${sec.leakStats.total > 1 ? 's' : ''} (${sec.leakStats.critical} Critical, ${sec.leakStats.high} High)`;
+    } else {
+      bountyBadge.className = 'badge badge-emerald';
+      bountyBadge.textContent = 'Clean — 0 Leaks';
+    }
+  }
+
+  if (exportBountyBtn) {
+    if (sec.leakStats && sec.leakStats.hasLeaks) {
+      exportBountyBtn.style.display = 'inline-flex';
+      exportBountyBtn.onclick = () => {
+        showBountyModal(null, sec.leaks);
+      };
+    } else {
+      exportBountyBtn.style.display = 'none';
+    }
+  }
+
+  if (leaksContainer) {
+    leaksContainer.innerHTML = '';
+    if (!sec.leaks || sec.leaks.length === 0) {
+      leaksContainer.innerHTML = `
+        <div class="empty-state" style="padding: 16px; text-align: center; color: var(--text-muted); font-size: 12px;">
+          Passive inspection clean: No database credentials, connection URIs, API keys, or verbose SQL stack traces observed in transit.
+        </div>
+      `;
+    } else {
+      sec.leaks.forEach((leak, idx) => {
+        const card = document.createElement('div');
+        card.className = 'finding-item';
+        card.style.borderLeft = leak.severity === 'CRITICAL' ? '3px solid #f43f5e' : '3px solid #f59e0b';
+        card.style.marginBottom = '10px';
+
+        const sevBadge = leak.severity === 'CRITICAL' ? 'badge-rose' : (leak.severity === 'HIGH' ? 'badge-amber' : 'badge-cyan');
+        const leakValId = `leak-val-${idx}`;
+
+        card.innerHTML = `
+          <div class="finding-header" style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;">
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+              <span class="finding-title" style="font-weight: 700;">${escapeHtml(leak.title)}</span>
+              <span class="badge ${sevBadge}">${leak.severity}</span>
+              ${leak.cwe ? `<span class="badge badge-slate" style="font-size: 10px;">${escapeHtml(leak.cwe)}</span>` : ''}
+              ${leak.cvss ? `<span class="badge badge-rose" style="font-size: 10px;">CVSS ${leak.cvss}</span>` : ''}
+            </div>
+            <div style="display: flex; gap: 6px;">
+              <button class="btn btn-outline btn-xs btn-draft-bounty" style="font-size: 10.5px; padding: 2px 8px;">Draft Report &rarr;</button>
+            </div>
+          </div>
+          <div class="finding-desc" style="margin-top: 6px; font-size: 12px; color: var(--text-secondary);">
+            ${escapeHtml(leak.description || leak.explanation || '')}
+          </div>
+          <div style="margin-top: 8px; background: var(--bg-muted, #1e1e2e); padding: 8px 10px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px;">
+            <span style="color: var(--text-muted); font-size: 10.5px;">EVIDENCE:</span>
+            <code id="${leakValId}" style="flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #f43f5e;">${escapeHtml(leak.maskedValue || leak.observed || '')}</code>
+            <button class="btn btn-outline btn-xs btn-toggle-secret" style="font-size: 10px; padding: 2px 6px;">Reveal</button>
+          </div>
+          <div style="display: flex; gap: 14px; font-size: 10.5px; color: var(--text-muted); font-family: var(--font-mono); margin-top: 6px;">
+            <span>Source: ${escapeHtml(leak.evidenceSource || 'HTTP Network Response')}</span>
+            <span>Origin: ${escapeHtml(leak.affectedUrl || currentSession.primaryDomain)}</span>
+          </div>
+        `;
+
+        // Reveal / Mask toggle
+        const toggleSecretBtn = card.querySelector('.btn-toggle-secret');
+        const codeEl = card.querySelector(`#${leakValId}`);
+        let isRevealed = false;
+        if (toggleSecretBtn && codeEl) {
+          toggleSecretBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            isRevealed = !isRevealed;
+            if (isRevealed) {
+              codeEl.textContent = leak.rawValue || leak.observed || leak.maskedValue;
+              codeEl.style.color = '#ef4444';
+              toggleSecretBtn.textContent = 'Mask';
+            } else {
+              codeEl.textContent = leak.maskedValue || leak.observed || '';
+              codeEl.style.color = '#f43f5e';
+              toggleSecretBtn.textContent = 'Reveal';
+            }
+          });
+        }
+
+        // Draft Report Button
+        const draftBtn = card.querySelector('.btn-draft-bounty');
+        if (draftBtn) {
+          draftBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            showBountyModal(leak, [leak]);
+          });
+        }
+
+        leaksContainer.appendChild(card);
+      });
+    }
+  }
+}
+
+function showBountyModal(singleLeak, allLeaks) {
+  const modal = document.getElementById('bountyModal');
+  const title = document.getElementById('bountyModalTitle');
+  const content = document.getElementById('bountyModalContent');
+  if (!modal || !content) return;
+
+  const targetUrl = currentSession?.url || (currentSession?.primaryDomain ? `https://${currentSession.primaryDomain}` : 'https://underweb.local');
+  const leaksList = singleLeak ? [singleLeak] : (allLeaks || []);
+
+  if (title) {
+    title.textContent = singleLeak
+      ? `Bug Bounty Report: ${singleLeak.title}`
+      : `Bug Bounty Audit (${leaksList.length} Leaks)`;
+  }
+
+  // Generate HackerOne / Bugcrowd Markdown
+  if (singleLeak) {
+    currentBountyMarkdown = BountyReportBuilder.toMarkdown(singleLeak, { targetUrl });
+  } else {
+    currentBountyMarkdown = leaksList.map(l => BountyReportBuilder.toMarkdown(l, { targetUrl })).join('\n\n---\n\n');
+  }
+
+  // Generate SARIF
+  currentBountySarifObj = BountyReportBuilder.toSarif(leaksList, { targetUrl });
+
+  content.textContent = currentBountyMarkdown;
+  modal.classList.add('active');
 }
 
 function showFindingModal(f) {

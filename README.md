@@ -5,7 +5,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 [![CI](https://github.com/amrnath005/Underweb/actions/workflows/ci.yml/badge.svg)](https://github.com/amrnath005/Underweb/actions)
 [![Manifest V3](https://img.shields.io/badge/Manifest-V3-success.svg)](https://developer.chrome.com/docs/extensions/mv3/intro/)
-[![Tests: 147 Passed](https://img.shields.io/badge/Tests-147%20Passed-emerald.svg)](tests/test-runner.js)
+[![Tests: 170 Passed](https://img.shields.io/badge/Tests-170%20Passed-emerald.svg)](tests/test-runner.js)
 [![Zero Telemetry](https://img.shields.io/badge/Telemetry-Zero%20(Local--First)-blueviolet.svg)](#privacy)
 [![Platform](https://img.shields.io/badge/Platform-Chrome%20%7C%20Edge%20%7C%20Firefox%20%7C%20Brave-informational.svg)](#try-it-in-30-seconds)
 [![Live Demo](https://img.shields.io/badge/Live%20Demo-Web%20Playground-orange.svg)](https://amrnath005.github.io/Underweb/)
@@ -35,7 +35,7 @@ Pre-loaded with recorded real-world production stack snapshots:
 |                                    UNDERWEB CONSOLE                                   |
 +---------------------------+---------------------------+-------------------------------+
 | Technology Detection      | Network Intelligence      | API Detection                 |
-| 206+ observable stack     | Remote server IPs, HTTP/2 | Automatic REST and GraphQL    |
+| 207+ observable stack     | Remote server IPs, HTTP/2 | Automatic REST and GraphQL    |
 | signatures across modern  | and HTTP/3 QUIC, transfer | cataloging, operation names,  |
 | frameworks, CSS, libraries| sizes, and eTLD+1 party   | timing, and WebSocket socket  |
 | build tools, and CDNs.    | attribution boundaries.   | connection profiling.         |
@@ -45,10 +45,10 @@ Pre-loaded with recorded real-world production stack snapshots:
 | Client -> Remote IP / ASN | CSP, HSTS, active/passive | graph with Dijkstra shortest  |
 | -> CDN Edge -> Host.      | mixed content, & cookies. | path & betweenness centrality.|
 +---------------------------+---------------------------+-------------------------------+
-| Browser APIs              | Evidence & Confidence     | Interaction Investigator      |
-| Storage keys, canvas,     | Every detection cites its | Records cause-and-effect:     |
-| WebGL, Web Audio, sensors,| exact signal source with  | Click -> DOM -> API Request   |
-| and permission surfaces.  | probabilistic confidence. | -> Response -> Storage Update.|
+| Bug Bounty & Leak Scanner | Evidence & Confidence     | Interaction Investigator      |
+| Passive DB URIs, SQL stack| Every detection cites its | Records cause-and-effect:     |
+| traces, masked API keys,  | exact signal source with  | Click -> DOM -> API Request   |
+| SARIF v2.1.0 and Markdown.| probabilistic confidence. | -> Response -> Storage Update.|
 +---------------------------+---------------------------+-------------------------------+
 ```
 
@@ -62,6 +62,7 @@ Most web technology detectors operate on superficial URL string matching or fabr
 - **Evidence-Backed Detection**: Every technology identified is anchored to an inspectable `EvidenceRecord` citing the exact runtime global, DOM node, or HTTP response header that proved its presence.
 - **Observable vs. Inferred Differentiation**: Directly observed technologies are clearly separated from architectural inferences. If a framework implies a parent (e.g. Next.js implying React), the inference relationship is explicitly labeled.
 - **No Fabricated Backend Claims**: Underweb will never guess invisible backend components. Unless an explicit response header or cookie provides proof, it will never claim to detect internal databases (PostgreSQL, MySQL, Redis, MongoDB) or internal orchestration (Docker, Kubernetes).
+- **Bug Bounty & In-Flight Secret Auditing**: Passively monitors network streams for exposed database connection URIs (PostgreSQL, MySQL, MongoDB, Redis), verbose SQL error stack traces (CWE-209), and cloud/payment/AI API credentials with Shannon entropy validation and one-click HackerOne, Bugcrowd, and OASIS SARIF v2.1.0 reporting.
 - **WebAssembly & Source Map Auditing**: Deeply profiles `.wasm` binary payloads to attribute compiler toolchains (Rust `wasm-bindgen`, Go/TinyGo, Emscripten, AssemblyScript) while passively detecting exposed production source maps.
 - **One-Click Diagram & Vector Export**: Export active architecture dependency graphs directly into GitHub-ready Mermaid Markdown diagrams or standalone vector SVG files.
 - **Dual-Engine Browser Support**: Ships optimized Manifest V3 distributions for Chromium browsers (Chrome, Edge, Brave, Opera) and Mozilla Firefox (Gecko MV3).
@@ -250,7 +251,7 @@ Underweb operates transparently within the security boundaries of standard brows
 
 ## Verification & Automated Tests
 
-Underweb includes a zero-dependency automated test suite running 147 test assertions across 18 test suites:
+Underweb includes a zero-dependency automated test suite running 170 test assertions across 19 test suites:
 
 ```bash
 npm test              # Executes zero-dependency test runner
@@ -277,13 +278,16 @@ npm run build:all     # Validates AST syntax, module imports, and creates releas
 --- Suite: Deep WebAssembly & Sourcemap Telemetry ---
   ✔ PASS: Detects base WebAssembly binary payload
   ✔ PASS: Correctly attributes Rust (wasm-bindgen) toolchain
-  ✔ PASS: Detects Go / TinyGo wasm_exec runtime
-  ✔ PASS: Detects Emscripten C/C++ toolchain
-  ✔ PASS: Detects AssemblyScript compiler output
-  ✔ PASS: Detects exposed source map files or headers
+...
+--- Suite: Bug Bounty & Database/Secret Leak Scanner ---
+  ✔ PASS: Database URI masks password and preserves host/user
+  ✔ PASS: Detects PostgreSQL connection string
+  ✔ PASS: Detects verbose MySQL syntax error trace
+  ✔ PASS: Generates Markdown bug bounty report
+  ✔ PASS: SARIF document is version 2.1.0
 
 ========================================
-Test Execution Finished: 147 Passed, 0 Failed
+Test Execution Finished: 170 Passed, 0 Failed
 ========================================
 ```
 
@@ -296,6 +300,7 @@ Test Execution Finished: 147 Passed, 0 Failed
 - [x] One-click architecture diagram export in Mermaid Markdown and vector SVG formats.
 - [x] Deep WebAssembly (WASM) compiler toolchain attribution and source map auditing.
 - [x] Mozilla Firefox Add-ons (Manifest V3 Gecko) packaging and distribution pipeline.
+- [x] Bug bounty & in-flight secret scanner with database URI audits and OASIS SARIF v2.1.0 export.
 - [ ] Deep HTTP/3 0-RTT and QUIC connection parameter telemetry.
 - [ ] Headless CLI runner for automated CI/CD website auditing.
 

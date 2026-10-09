@@ -42,7 +42,10 @@
         <span id="siteProtocol" class="site-protocol">https://</span>
         <span id="siteHostname" class="site-host">Scanning substrate...</span>
       </div>
-      <span id="securityBadge" class="badge badge-green">Secure</span>
+      <div style="display: flex; align-items: center; gap: 6px;">
+        <span id="popupLeakBadge" class="badge badge-rose" style="display: none; cursor: pointer; font-weight: 700;" title="Click to view detected database/secret leaks in Dashboard">0 Leaks</span>
+        <span id="securityBadge" class="badge badge-green">Secure</span>
+      </div>
     </div>
 
     <!-- METRICS GRID -->
